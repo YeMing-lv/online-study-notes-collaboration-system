@@ -54,7 +54,7 @@ router.beforeEach(async (to, from, next) => {
         } else {
             // 发送请求
             const result = await checkToken();
-            if (result.code !== 200) {
+            if (result.code !== 200 || result === undefined) {
                 console.error('token校验失败：', result.message);
                 next({ name: 'Login', param: { redirect: to.fullPath } });
             } else {

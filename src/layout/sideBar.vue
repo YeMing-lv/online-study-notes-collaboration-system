@@ -1,5 +1,5 @@
 <template>
-    <el-menu :collapse="isCollapse" @select="handleMenuSelection">
+    <el-menu ref="sideBarRef" :collapse="isCollapse" @select="handleMenuSelection">
         <user-avatar v-if="!isCollapse"></user-avatar>
         <div class="side-bar-content">
             <el-menu-item index="newFile"><el-icon>
@@ -7,70 +7,32 @@
                 </el-icon>
                 <template #title>最新</template>
             </el-menu-item>
-            <el-sub-menu index="file">
+            <el-sub-menu index="folder">
                 <template #title>
                     <el-icon>
                         <Folder />
                     </el-icon>
                     <span>我的文件夹</span>
-                    <el-icon :size="12" class="more-icon" ref="moreRef">
+                    <el-icon :size="12" class="more-icon" :ref="(el) => collectRef(el, 0, 'more')"
+                        @click.stop="handleMoreClick({ id: 0, name: '' })">
                         <More />
                     </el-icon>
-                    <el-popover popper-class="side-bar-folder-more" ref="morePopperRef" :virtual-ref="moreRef"
-                        trigger="click" :show-arrow="false" placement="right-start" virtual-triggering>
-                        <ul class="folder-more-list">
-                            <el-popover popper-class="side-bar-folder-more" placement="right" trigger="hover">
-                                <template #reference>
-                                    <li>
-                                        <span>新建</span>
-                                        <el-icon>
-                                            <ArrowRight />
-                                        </el-icon>
-                                    </li>
-                                </template>
-                                <ul class="folder-more-list">
-                                    <li @click="createFile('Folder', true)">文件夹</li>
-                                </ul>
-                            </el-popover>
-                        </ul>
-                    </el-popover>
                 </template>
-                <el-tree :data="myFolders" node-key="id" @node-click="handleFolderClick">
+                <el-tree ref="treeFoldersRef" :data="myFolders" node-key="id" @node-click="handleFolderClick">
                     <template #default="{ node, data }">
                         <div class="tree-content">
-                            <div v-if="currentRenameFolderID !== data.id">
+                            <el-input :ref="(el) => collectRef(el, data.id, 'rename')"
+                                v-if="currentFolder.id === data.id && isRename" v-model="currentFolder.name"
+                                @keyup.enter="renameInputCompl" @click.stop="" v-click-outside="renameInputCompl">
+                            </el-input>
+                            <div v-else>
                                 {{ data.name }}
                             </div>
-                            <el-input :ref="(el) => collectRenameInputRef(el, data.id)" v-else v-model="inputName"
-                                @blur="renameComplete(data)" @keyup.enter.stop="renameComplete(data)" @click.stop="">
-                            </el-input>
                             <div class="tree-func-icon">
-                                <el-popover popper-class="side-bar-folder-more" trigger="click" :show-arrow="false"
-                                    placement="right-start">
-                                    <ul class="folder-more-list">
-                                        <el-popover popper-class="side-bar-folder-more" placement="right"
-                                            trigger="hover">
-                                            <template #reference>
-                                                <li>
-                                                    <span>新建</span>
-                                                    <el-icon>
-                                                        <ArrowRight />
-                                                    </el-icon>
-                                                </li>
-                                            </template>
-                                            <ul class="folder-more-list">
-                                                <li @click="createFile('Folder', false)">文件夹</li>
-                                            </ul>
-                                        </el-popover>
-                                        <li @click="renameFolder($event, data)">重命名</li>
-                                        <li @click="deleteFolder(data)">删除</li>
-                                    </ul>
-                                    <template #reference>
-                                        <el-icon :size="12" @click.stop="">
-                                            <More />
-                                        </el-icon>
-                                    </template>
-                                </el-popover>
+                                <el-icon :size="12" :ref="(el) => collectRef(el, data.id, 'more')"
+                                    @click.stop="handleMoreClick(data)">
+                                    <More />
+                                </el-icon>
                             </div>
                         </div>
                     </template>
@@ -100,36 +62,67 @@
                 </el-icon>
             </el-button>
         </div> -->
-
+        <el-popover popper-class="side-bar-folder-more" :visible="hideMorePopover.more" :show-arrow="false"
+            placement="right-start" :virtual-ref="moreRefs[currentFolder.id]" virtual-triggering>
+            <ul class="folder-more-list" v-click-outside="handleHideMorePop">
+                <el-popover popper-class="side-bar-folder-more" placement="right" :visible="hideMorePopover.create"
+                    trigger="hover">
+                    <template #reference>
+                        <li style="display: flex;align-items: center;" @click.stop="hideMorePopover.create = true">
+                            <span>新建</span>
+                            <el-icon>
+                                <ArrowRight />
+                            </el-icon>
+                        </li>
+                    </template>
+                    <ul class="folder-more-list" v-click-outside="() => hideMorePopover.create = false">
+                        <li @click="createFile('Folder')">文件夹</li>
+                    </ul>
+                </el-popover>
+                <li v-if="currentFolder.id !== 0" @click="renameFolder">重命名</li>
+                <li v-if="currentFolder.id !== 0" @click="deleteFolder">删除</li>
+            </ul>
+        </el-popover>
     </el-menu>
 </template>
 <script setup>
-import { ArrowRightBold, Delete, Folder, Menu, More, Star } from '@element-plus/icons-vue';
-import { ClickOutside as VClickOutside } from 'element-plus';
+import { ElMessage, ElMessageBox, ClickOutside as vClickOutside } from 'element-plus';
 import userAvatar from './components/userAvatar.vue';
-import { nextTick, onMounted, reactive, ref } from 'vue';
+import { nextTick, onMounted, reactive, ref, watch } from 'vue';
 
 /**
  * data
  * ----------------------------------------------------
  */
+// 是否折叠
 const isCollapse = ref(false);
+// 文件夹数组
 const { myFolders } = defineProps({
     myFolders: {
         type: Array,
         default: () => []
     }
 })
-const treeEmits = defineEmits(['create-file', 'rename-folder', 'delete-folder'])
+// 事件触发
+const treeEmits = defineEmits(['create-file', 'rename-file', 'delete-file'])
 
+// 弹框模板引用
+const currentFolder = ref({ id: 0, name: '' });
+const hideMorePopover = reactive({
+    more: false,
+    create: false,
+});
 const morePopperRef = ref();
-const moreRef = ref();
+const moreRefs = reactive({})
 
-// 重命名：新名字、当前文件夹ID、输入框的动态模板引用
-const inputName = ref();
-const currentRenameFolderID = ref();
-const renameInputRef = reactive({});
+// 重命名模板引用
+const isRename = ref(false);
+const renameInputRefs = reactive({})
 
+// 树形文件夹模板引用
+const treeFoldersRef = ref();
+const isCreateFolder = ref(false);
+const sideBarRef = ref();
 
 /**
  * 钩子函数
@@ -138,7 +131,26 @@ const renameInputRef = reactive({});
 onMounted(() => {
     // console.log(myFolders);
     // console.log(renameRef.value);
+    // console.log(renameInputRefs.value);
 })
+
+/**
+ * 侦听器
+ * -------------------------------------------------------
+ */
+watch(() => myFolders, async (newV, oldV) => {
+    // console.log(myFolders);
+    if (isCreateFolder.value && isRename.value) {
+        sideBarRef.value.open('folder');
+        await nextTick();
+
+        treeFoldersRef.value.setCurrentKey(currentFolder.value.id, true);
+        await nextTick();
+
+        await nextTick();
+        focusNameInput(currentFolder.value.id);
+    }
+}, { deep: true })
 
 /**
  * methods
@@ -155,61 +167,101 @@ const handleFolderClick = () => {
 
 }
 
+// 点击更多操作
+const handleMoreClick = (data) => {
+    currentFolder.value = data;
+    hideMorePopover.more = true;
+}
+
 // 新建
-const createFile = (type, isMineFolder = false) => {
-    let parent = '';
-    if (isMineFolder === true) {
-        parent = 'MainFolder';
-    }
+const createFile = (type) => {
     switch (type) {
         case 'Folder':
+            handleHideMorePop();
+            isCreateFolder.value = true;
+            isRename.value = true;
+
+            // 1、初始化文件夹数据
+            const tempFolder = {
+                id: new Date().getTime() + Math.floor(Math.random() * 100),
+                name: '新建文件夹',
+                parentId: currentFolder.value.id,
+            };
+            currentFolder.value = tempFolder;
+
+            // 2、临时在树中新建一个文件夹
+            treeEmits('create-file', { type: 'Folder', data: tempFolder });
+            return;
     }
-    emit('create-file', { type: type, isMineFolder: isMineFolder });
 }
 
 // 重命名文件夹
-const renameFolder = async (event, folder) => {
-    event.stopPropagation();
-    inputName.value = folder.name;
-    currentRenameFolderID.value = folder.id;
-    const inputRef = renameInputRef[folder.id];
+const renameFolder = async (event) => {
+    isRename.value = true;
+    handleHideMorePop();
+    isCreateFolder.value = false;
+    await nextTick();
     await nextTick();
 
-    if (inputRef) {
-        /**
-         * 聚焦输入框 失败
-         * 第一次点击 未聚焦，后续就可以
-         */
-        setTimeout(() => {
-            inputRef.focus();
-            inputRef.$el.querySelector('input').focus();
-        }, 100)
-    }
-}
-
-// 建立输入框Ref
-const collectRenameInputRef = (el, id) => {
-    if (el) {
-        renameInputRef[id] = el;
-    } else {
-        delete renameInputRef[id];
-    }
+    focusNameInput(currentFolder.value.id);
 }
 
 // 输入框失焦
-const renameComplete = (folder) => {
-    const data = JSON.parse(JSON.stringify(folder));
-    delete data.children;
-    // console.log(data);
-    data.name = inputName.value;
-    currentRenameFolderID.value = null;
-    inputName.value = '';
-    treeEmits('rename-folder', data);
+const renameInputCompl = () => {
+    debugger
+    // 新建文件夹时进行命名
+    if (isCreateFolder.value) {
+        if (currentFolder.value.name) {
+            treeEmits('rename-file', currentFolder.value);
+        } else {
+            treeEmits('delete-file', currentFolder.value.id);
+        }
+        isCreateFolder.value = false;
+    } else if (currentFolder.value.name) { // 文件夹重命名
+        treeEmits('rename-file', currentFolder.value);
+    }
+    isRename.value = false;
 }
 
 // 删除文件夹
-const deleteFolder = (data) => {
-    treeEmits('delete-folder', data.id);
+const deleteFolder = () => {
+    ElMessageBox.confirm(
+        '确认要删除文件夹吗，会连带着其中的文件一并放入回收站？',
+        '是否删除文件夹',
+        {
+            confirmButtonText: '确认',
+            cancelButtonText: '取消',
+            type: 'warning',
+        }
+    ).then(() => {
+        ElMessage.success('文件夹已放入回收站!');
+        treeEmits('delete-file', currentFolder.value.id);
+    }).catch(() => { })
+}
+
+// 建立ref
+const collectRef = (el, id, type) => {
+    if (el) {
+        type === 'rename' ? renameInputRefs[id] = el : moreRefs[id] = el;
+    } else {
+        type === 'rename' ? delete renameInputRefs[id] : delete moreRefs[id];
+    }
+}
+
+// 聚焦输入框
+const focusNameInput = (id) => {
+    const inputRef = renameInputRefs[id];
+    if (!inputRef) console.error('没有改变ID的模板引用!');
+    if (inputRef) {
+        inputRef.focus();
+        inputRef.select();
+    }
+}
+
+// 隐藏所有弹框
+const handleHideMorePop = () => {
+    hideMorePopover.more = false;
+    hideMorePopover.create = false;
 }
 
 </script>
@@ -246,7 +298,7 @@ const deleteFolder = (data) => {
                 height: 20px !important;
 
                 .more-icon :hover {
-                    background-color: #efefef;
+                    background-color: #d6d6d6;
                 }
 
             }
@@ -286,7 +338,7 @@ const deleteFolder = (data) => {
                     }
 
                     .tree-func-icon:hover {
-                        background-color: #efefef;
+                        background-color: #d6d6d6;
                     }
                 }
             }
