@@ -1,3 +1,13 @@
+<!--
+ * @Author: Yeming-lv 1602552896@qq.com
+ * @Date: 2025-12-12 17:26:01
+ * @LastEditors: Yeming-lv 1602552896@qq.com
+ * @LastEditTime: 2026-01-21 09:03:34
+ * @FilePath: \online-study-notes-collaboration-system\src\views\Login\components\userLogForm.vue
+ * @Description: 登录/注册表单，对表单进行滑动验证管理和表单校验。
+ * 
+ * Copyright (c) 2026 by ${git_name_email}, All Rights Reserved. 
+-->
 <template>
     <el-form ref="userLogForm" :model="user" :rules="rules" label-width="auto">
         <el-form-item label="用户名" prop="name" v-show="!(props.formType === 'login')">

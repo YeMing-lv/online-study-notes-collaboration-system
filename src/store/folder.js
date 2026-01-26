@@ -1,12 +1,12 @@
 import { defineStore } from "pinia";
 
-export const useFileStore = defineStore('fileStore', {
+export const useFolderStore = defineStore('folderStore', {
     state: () => ({
-        
+        currentFolder: {},
     }),
     actions: {
         init: {
-
+            
         }
 
     },

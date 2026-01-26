@@ -110,7 +110,7 @@ const beforeUpload = (file) => {
 
 // 上传头像成功
 const uploadSuccess = async (event) => {
-    console.log('上传进度:', event);
+    // console.log('上传进度:', event);
     if (event.errno === 0) { //上传成功
         try {
             user.avatar = event.data.url;

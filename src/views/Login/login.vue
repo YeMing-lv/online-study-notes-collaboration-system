@@ -1,3 +1,13 @@
+<!--
+ * @Author: Yeming-lv 1602552896@qq.com
+ * @Date: 2025-12-11 08:40:30
+ * @LastEditors: Yeming-lv 1602552896@qq.com
+ * @LastEditTime: 2026-01-21 08:56:29
+ * @FilePath: \online-study-notes-collaboration-system\src\views\Login\login.vue
+ * @Description: 登录页面，可进行登录/注册，需要进行滑动验证，表单校验。
+ * 
+ * Copyright (c) 2026 by ${git_name_email}, All Rights Reserved. 
+-->
 <template>
     <div class="login-container">
         <h3>在线学习笔记协作系统</h3>
@@ -32,10 +42,9 @@ const userStore = useUserStore();
  */
 onMounted(() => {
     // console.log(isLogOrReg.value);
-
     // 清理用户身份信息
     userStore.initState();
-    console.log(userStore.user);
+    // console.log(userStore.user);
 })
 
 /**

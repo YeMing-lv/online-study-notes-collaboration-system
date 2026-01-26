@@ -1,3 +1,13 @@
+/*
+ * @Author: Yeming-lv 1602552896@qq.com
+ * @Date: 2025-12-10 17:20:46
+ * @LastEditors: Yeming-lv 1602552896@qq.com
+ * @LastEditTime: 2026-01-21 09:02:59
+ * @FilePath: \online-study-notes-collaboration-system\src\router\router.js
+ * @Description: 
+ * 
+ * Copyright (c) 2026 by ${git_name_email}, All Rights Reserved. 
+ */
 import { createRouter } from "vue-router";
 import { createWebHistory } from "vue-router";
 import { checkToken } from '@/api/apis/token';
@@ -52,13 +62,18 @@ router.beforeEach(async (to, from, next) => {
             console.error("token为空，请先登录");
             next({ name: 'Login', param: { redirect: to.fullPath } });
         } else {
-            // 发送请求
-            const result = await checkToken();
-            if (result.code !== 200 || result === undefined) {
-                console.error('token校验失败：', result.message);
-                next({ name: 'Login', param: { redirect: to.fullPath } });
-            } else {
-                next();
+            try {
+                // 发送请求
+                const result = await checkToken();
+                if (result.code !== 200 || result === undefined) {
+                    console.error('token校验失败：', result.message);
+                    next({ name: 'Login', param: { redirect: to.fullPath } });
+                } else {
+                    next();
+                }
+            } catch (error) {
+                console.error("请求检验token失败:", error);
+                next({ name: 'Login', query: { redirect: to.fullPath } });
             }
         }
     }

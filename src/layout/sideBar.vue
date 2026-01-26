@@ -1,3 +1,13 @@
+<!--
+ * @Author: Yeming-lv 1602552896@qq.com
+ * @Date: 2025-12-11 11:09:12
+ * @LastEditors: Yeming-lv 1602552896@qq.com
+ * @LastEditTime: 2026-01-21 09:33:54
+ * @FilePath: \online-study-notes-collaboration-system\src\layout\sideBar.vue
+ * @Description: 侧边文件夹导航栏，包含了个人用户管理、新建文件、文件夹导航
+ * 
+ * Copyright (c) 2026 by ${git_name_email}, All Rights Reserved. 
+-->
 <template>
     <el-menu ref="sideBarRef" :collapse="isCollapse" @select="handleMenuSelection">
         <user-avatar v-if="!isCollapse"></user-avatar>
@@ -7,7 +17,7 @@
                 </el-icon>
                 <template #title>最新</template>
             </el-menu-item>
-            <el-sub-menu index="folder">
+            <el-sub-menu index="myFolder">
                 <template #title>
                     <el-icon>
                         <Folder />
@@ -46,13 +56,14 @@
             <el-menu-item index="important"><el-icon>
                     <Star />
                 </el-icon><template #title>重要</template></el-menu-item>
-            <el-menu-item index="trash"><el-icon>
+            <el-menu-item index="crycle"><el-icon>
                     <Delete />
                 </el-icon><template #title>回收站</template></el-menu-item>
             <el-menu-item index="group"><el-icon>
                     <Cloudy />
                 </el-icon><template #title>云协作</template></el-menu-item>
         </div>
+        <!-- TODO 侧边栏折叠 -->
         <!-- <el-divider style="margin: 0;padding: 0;"></el-divider> -->
         <!-- <div class="side-bar-footer">
             <el-button type="text" @click="isCollapse = !isCollapse">
@@ -89,10 +100,12 @@
 import { ElMessage, ElMessageBox, ClickOutside as vClickOutside } from 'element-plus';
 import userAvatar from './components/userAvatar.vue';
 import { nextTick, onMounted, reactive, ref, watch } from 'vue';
+import { useFolderStore } from '../store/folder';
+
 
 /**
  * data
- * ----------------------------------------------------
+ * ————————————————————————————————————————————————————————————————————————————————————
  */
 // 是否折叠
 const isCollapse = ref(false);
@@ -113,7 +126,7 @@ const hideMorePopover = reactive({
     create: false,
 });
 const morePopperRef = ref();
-const moreRefs = reactive({})
+const moreRefs = reactive({});
 
 // 重命名模板引用
 const isRename = ref(false);
@@ -124,9 +137,12 @@ const treeFoldersRef = ref();
 const isCreateFolder = ref(false);
 const sideBarRef = ref();
 
+// 当前文件夹状态管理
+const folderStore = useFolderStore();
+
 /**
  * 钩子函数
- * --------------------------------------------------
+ * ————————————————————————————————————————————————————————————————————————————
  */
 onMounted(() => {
     // console.log(myFolders);
@@ -136,7 +152,7 @@ onMounted(() => {
 
 /**
  * 侦听器
- * -------------------------------------------------------
+ * ————————————————————————————————————————————————————————————————————————————————
  */
 watch(() => myFolders, async (newV, oldV) => {
     // console.log(myFolders);
@@ -154,17 +170,23 @@ watch(() => myFolders, async (newV, oldV) => {
 
 /**
  * methods
- * -------------------------------------------------
+ * ————————————————————————————————————————————————————————————————————————————————————
  */
-// 选择导航栏
+// 选择导航栏 文件夹
 const handleMenuSelection = (key, keyPath) => {
-    console.log(key);
-    console.log(keyPath);
+    folderStore.currentFolder = {
+        id: 0,
+        name: key
+    }
 }
 
 // 文件夹被点击
-const handleFolderClick = () => {
-
+const handleFolderClick = (data, ...arr) => {
+    // 参数 data node tree event
+    for (let item of arr) {
+        // console.log(item);
+    }
+    folderStore.currentFolder = data;
 }
 
 // 点击更多操作
@@ -172,6 +194,7 @@ const handleMoreClick = (data) => {
     currentFolder.value = data;
     hideMorePopover.more = true;
 }
+
 
 // 新建
 const createFile = (type) => {
@@ -286,11 +309,13 @@ const handleHideMorePop = () => {
             height: 20px;
             padding: 15px 10px;
             font-size: 12px;
+            overflow: hidden;
         }
 
         .el-sub-menu {
             font-size: 12px;
             padding: 0px;
+            overflow: hidden;
 
             :deep(.el-sub-menu__title) {
                 font-size: 12px;

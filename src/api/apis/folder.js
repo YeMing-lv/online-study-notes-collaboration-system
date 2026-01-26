@@ -10,4 +10,4 @@ export const updateFolder = (folder) => http.post('folder/update', folder);
 export const createFolder = (folder) => http.post('folder/create', folder);
 
 // 删除
-export const deleteFolder = (id) => http.post('folder/delete', id)
+export const deleteFolder = (id) => http.post('folder/delete', id);

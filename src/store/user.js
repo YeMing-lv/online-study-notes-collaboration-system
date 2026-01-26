@@ -12,6 +12,10 @@ export const useUserStore = defineStore('user', {
     }),
     actions: {
         /** 初始化数据 */
+        initUser() {
+            this.user = null;
+            this.token = null;
+        },
         initState() {
             this.user = null;
             this.token = null;
