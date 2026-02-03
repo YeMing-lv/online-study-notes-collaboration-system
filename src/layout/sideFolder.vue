@@ -2,7 +2,7 @@
  * @Author: Yeming-lv 1602552896@qq.com
  * @Date: 2025-12-11 11:17:14
  * @LastEditors: Yeming-lv 1602552896@qq.com
- * @LastEditTime: 2026-01-26 16:57:47
+ * @LastEditTime: 2026-02-02 11:40:13
  * @FilePath: \online-study-notes-collaboration-system\src\layout\sideFolder.vue
  * @Description: 侧边的文件夹导航栏，能进行条件搜索、文件夹导航、显示文件夹内的文件
  * 
@@ -12,15 +12,21 @@
     <div class="folder-container">
         <div class="search">
             <el-col :span="18">
-                <el-input prefix-icon="Search" v-model="searchInput" placeholder="搜索笔记" clearable></el-input>
+                <el-input v-model="searchInput" placeholder="搜索笔记" clearable @keydown.enter="searchFile()" @clear="searchFile()">
+                    <template #append>
+                        <el-button type="primary" @click="searchFile()">
+                            <el-icon>
+                                <Search />
+                            </el-icon>
+                        </el-button>
+                    </template>
+                </el-input>
             </el-col>
-            <el-popover popper-class="search-cond-pop" :visible="displaySearchCondPop" placement="bottom">
-                <template #reference>
-                    <el-icon :size="22" @click="displaySearchCondPop = true">
-                        <Operation />
-                    </el-icon>
-                </template>
-                <div class="search-cond__switch-wrapper" v-click-outside="() => displaySearchCondPop = false">
+            <popover>
+                <el-icon :size="22">
+                    <Operation />
+                </el-icon>
+                <template #content>
                     <ul>
                         <li v-for="item in orderCondList" :key="item.name" @click="selectOrderCond(item.value)">
                             <span>{{ item.name }}</span>
@@ -30,12 +36,16 @@
                             </el-icon>
                         </li>
                     </ul>
-                </div>
-            </el-popover>
+                </template>
+            </popover>
         </div>
-        <div class="menu">
-            menu
-        </div>
+        <!-- TODO 文件夹面包屑，有点难搞，宽度不够，等后面把布局拖拽做了再来弄 -->
+        <!-- <el-breadcrumb separator=">">
+            <el-breadcrumb-item v-for="item in folderRoutes" :key="item.id" :to="{ path: '', name: '' }">
+                {{ item.name }}
+            </el-breadcrumb-item>
+        </el-breadcrumb> -->
+        <span class="folder-title" v-if="currentFolder.id !== 0">{{ currentFolder.name }}</span>
         <div class="files">
             <div class="default-img" v-if="fileList.length === 0">
                 <img src="../assets/file-background.png">
@@ -44,13 +54,16 @@
                 <div class="file-title">
                     <img :src="file.type === 1 ? getImgUrl('folder.png') : getImgUrl('markdown.png')" alt="">
                     <span class="title">{{ file.name || file.title }}</span>
-                    <!-- <el-icon class="more">
-                        <MoreFilled />
-                    </el-icon> -->
-                    <popover>
+                    <popover placement="right">
                         <el-icon class="more">
                             <MoreFilled />
                         </el-icon>
+                        <template #content>
+                            <ul>
+                                <li @click="renameFile(file.title || file.name)">重命名</li>
+                                <li>删除</li>
+                            </ul>
+                        </template>
                     </popover>
                 </div>
                 <div class="file-content" v-if="file.content">
@@ -70,15 +83,11 @@ import { listFileByFolderId } from '@/api/apis/file.js';
 import { formatTime } from '@/utils/timeHandle.js';
 import { getImgUrl } from '../utils/assetsImport.js';
 import popover from '../components/popover.vue';
+import { Search } from '@element-plus/icons-vue';
 
-/**
- * data
- * -----------------------------------------------------------------
- */
+//=======================================data===================================
 // 搜索栏
 const searchInput = ref();
-// 显示筛选条件弹框
-const displaySearchCondPop = ref(false);
 // 当前排序条件
 const currentOrderCond = ref();
 // 排序条件列表
@@ -102,6 +111,7 @@ const orderByDESC = ref(true);
 // 当前文件夹
 const folderStore = useFolderStore();
 const currentFolder = computed(() => folderStore.currentFolder);
+const folderRoutes = computed(() => folderStore.folderRoutes);
 const userStore = useUserStore();
 // 分页
 const pageParam = ref({
@@ -114,34 +124,17 @@ const pageParam = ref({
 const fileList = ref([]);
 
 
-/**
- * 钩子函数
- * ————————————————————————————————————————————————————————————————————————————
- */
+//========================================钩子函数========================================
 
-/**
- * 侦听器
- * ————————————————————————————————————————————————————————————————————————————————————————
- */
+//======================================侦听器============================================
 watch(currentFolder, (newV, oldV) => {
     // console.log(newV, oldV);
     if (currentFolder.value) {
         searchFile();
     }
 })
-watch([currentOrderCond, orderByDESC], ([newOrder, newDesc], [oldOrder, oldDesc]) => {
-    if (currentOrderCond) {
-        if (oldOrder) {
 
-        }
-    }
-})
-
-/**
- * methods
- * ————————————————————————————————————————————————————————————————————————————————————————————————————————
- */
-// TODO 搜索文件夹内 文件
+//========================================methods======================================
 const searchFile = async () => {
     try {
         const query = {
@@ -152,6 +145,10 @@ const searchFile = async () => {
         // 添加排序条件
         if (currentOrderCond.value !== null) {
             query[currentOrderCond.value] = orderByDESC.value;
+        }
+        // 添加关键词搜索
+        if (searchInput.value != null) {
+            query.keyword = searchInput.value;
         }
         const result = await listFileByFolderId(query);
         if (result.code === 200) {
@@ -166,7 +163,6 @@ const searchFile = async () => {
 
 // 选择排序条件
 const selectOrderCond = (orderCond) => {
-    // TODO 完成排序
     if (currentOrderCond.value === orderCond) {
         orderByDESC.value = !orderByDESC.value;
     } else {
@@ -180,123 +176,12 @@ const changeHTMLToText = (html) => {
     return html.replace(/<[^>]+>/g, '');
 }
 
-</script>
+// 重命名
+const renameFile = (name) => {
 
-<style lang="scss" scoped>
-.folder-container {
-    display: flex;
-    flex-direction: column;
-    width: 100%;
-    max-width: 250px;
-    border: 1px solid var(--el-border-color);
-
-    .search {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 10px;
-
-        .el-input {
-            flex-grow: 2;
-        }
-
-        .el-icon:hover {
-            cursor: pointer;
-            background-color: #efefef;
-        }
-
-    }
-
-    .files {
-        display: flex;
-        height: 100%;
-        flex-direction: column;
-        align-items: center;
-        overflow: hidden;
-        overflow-y: scroll;
-
-        &::-webkit-scrollbar {
-            width: 0 !important;
-            height: 0 !important;
-            background: transparent !important;
-            border: none !important;
-        }
-
-        &::-webkit-scrollbar-track {
-            background-color: transparent;
-        }
-
-        .default-img {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            flex-grow: 2;
-            padding: 200px 0px;
-
-            img {
-                width: 60%;
-            }
-        }
-
-        .file {
-            width: 100%;
-            margin-bottom: 5px;
-            min-height: 50px;
-            padding: 5px;
-            cursor: pointer;
-            overflow: hidden;
-
-            &:hover {
-                background: #efefef;
-            }
-
-            .file-title {
-                display: flex;
-                align-items: center;
-                font-size: 14px;
-                margin-bottom: 5px;
-
-                img {
-                    height: 20px;
-                    margin-right: 5px;
-                }
-
-                .title {
-                    flex-grow: 2;
-                }
-
-                .more {
-                    margin-right: 10px;
-
-                    &:hover {
-                        background-color: #afafaf;
-                        border-radius: 3px;
-                    }
-                }
-            }
-
-            .file-content {
-                display: -webkit-box;
-                -webkit-line-clamp: 3;
-                -webkit-box-orient: vertical;
-                overflow: hidden;
-                word-break: break-all;
-                font-size: 12px;
-                color: #808080;
-                padding-left: 20px;
-                margin-bottom: 5px;
-                margin-right: 5px;
-            }
-
-            .file-other {
-                font-size: 12px;
-                margin: 0px 5px;
-            }
-
-        }
-    }
 }
-</style>
+
+</script>
 
 <style lang="scss">
 .search-cond-pop {
@@ -320,4 +205,8 @@ const changeHTMLToText = (html) => {
         }
     }
 }
+</style>
+
+<style lang="scss" scoped>
+@import "css/sideFolder.scss";
 </style>

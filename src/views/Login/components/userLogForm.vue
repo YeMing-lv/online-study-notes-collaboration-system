@@ -25,7 +25,7 @@
                 {{ props.formType === 'login' ? '登录' : '注册' }}
             </el-button>
         </div>
-        zhangSan3
+        zhangSan3  xiaowang5
         <Vcode :show="displayVcode" @success="successVcode" @fail="failVcode" @close="displayVcode = false">
         </Vcode>
     </el-form>

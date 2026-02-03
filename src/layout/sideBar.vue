@@ -2,7 +2,7 @@
  * @Author: Yeming-lv 1602552896@qq.com
  * @Date: 2025-12-11 11:09:12
  * @LastEditors: Yeming-lv 1602552896@qq.com
- * @LastEditTime: 2026-01-21 09:33:54
+ * @LastEditTime: 2026-01-27 16:09:14
  * @FilePath: \online-study-notes-collaboration-system\src\layout\sideBar.vue
  * @Description: 侧边文件夹导航栏，包含了个人用户管理、新建文件、文件夹导航
  * 
@@ -30,7 +30,7 @@
                 </template>
                 <el-tree ref="treeFoldersRef" :data="myFolders" node-key="id" @node-click="handleFolderClick">
                     <template #default="{ node, data }">
-                        <div class="tree-content">
+                        <div class="tree-content" :class="currentFolder.id === data.id ? 'tree-content-active' : ''">
                             <el-input :ref="(el) => collectRef(el, data.id, 'rename')"
                                 v-if="currentFolder.id === data.id && isRename" v-model="currentFolder.name"
                                 @keyup.enter="renameInputCompl" @click.stop="" v-click-outside="renameInputCompl">
@@ -101,12 +101,9 @@ import { ElMessage, ElMessageBox, ClickOutside as vClickOutside } from 'element-
 import userAvatar from './components/userAvatar.vue';
 import { nextTick, onMounted, reactive, ref, watch } from 'vue';
 import { useFolderStore } from '../store/folder';
+import popover from '../components/popover.vue';
 
-
-/**
- * data
- * ————————————————————————————————————————————————————————————————————————————————————
- */
+// ==================================data===================================
 // 是否折叠
 const isCollapse = ref(false);
 // 文件夹数组
@@ -140,22 +137,18 @@ const sideBarRef = ref();
 // 当前文件夹状态管理
 const folderStore = useFolderStore();
 
-/**
- * 钩子函数
- * ————————————————————————————————————————————————————————————————————————————
- */
+// ==================================钩子函数========================================
 onMounted(() => {
     // console.log(myFolders);
     // console.log(renameRef.value);
     // console.log(renameInputRefs.value);
+    // console.log(sideBarRef.value);
 })
 
-/**
- * 侦听器
- * ————————————————————————————————————————————————————————————————————————————————
- */
+// ==================================侦听器===========================================
 watch(() => myFolders, async (newV, oldV) => {
-    // console.log(myFolders);
+    handleHideMorePop();
+    // BUG 新建文件夹的过程还是有问题
     if (isCreateFolder.value && isRename.value) {
         sideBarRef.value.open('folder');
         await nextTick();
@@ -167,11 +160,10 @@ watch(() => myFolders, async (newV, oldV) => {
         focusNameInput(currentFolder.value.id);
     }
 }, { deep: true })
+// TODO 监听store的currentFolder，修改elTree选中状态
 
-/**
- * methods
- * ————————————————————————————————————————————————————————————————————————————————————
- */
+
+// =================================== methods ======================================
 // 选择导航栏 文件夹
 const handleMenuSelection = (key, keyPath) => {
     folderStore.currentFolder = {
@@ -181,12 +173,24 @@ const handleMenuSelection = (key, keyPath) => {
 }
 
 // 文件夹被点击
-const handleFolderClick = (data, ...arr) => {
+const handleFolderClick = (data, node, tree, event) => {
     // 参数 data node tree event
-    for (let item of arr) {
-        // console.log(item);
+    let parentNode = node.parent;
+    const parentDatas = [];
+    parentDatas.unshift(node.data);
+    while (parentNode !== null) {
+        if (!(Array.isArray(parentNode.data))) {
+            parentDatas.unshift(parentNode.data); // 从孙节点开始，到每层父节点，再到根节点，用unshift
+        }
+        if (parentNode.parent !== null) {
+            parentNode = parentNode.parent;
+        } else {
+            parentNode = null;
+        }
     }
+    folderStore.folderRoutes = parentDatas;
     folderStore.currentFolder = data;
+    currentFolder.value = data;
 }
 
 // 点击更多操作
@@ -197,10 +201,11 @@ const handleMoreClick = (data) => {
 
 
 // 新建
-const createFile = (type) => {
+const createFile = async (type) => {
     switch (type) {
         case 'Folder':
             handleHideMorePop();
+            await nextTick();
             isCreateFolder.value = true;
             isRename.value = true;
 
@@ -297,7 +302,7 @@ const handleHideMorePop = () => {
     height: auto;
     min-height: 100vh;
     width: auto;
-    min-width: 120px;
+    min-width: 150px;
 
     .side-bar-content {
         overflow-y: hidden;
@@ -350,6 +355,10 @@ const handleHideMorePop = () => {
                         height: 20px;
                         font-size: 12px;
                     }
+                }
+
+                .tree-content-active {
+                    background-color: #d6d6d6;
                 }
 
                 .tree-content:hover {

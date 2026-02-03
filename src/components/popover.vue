@@ -1,10 +1,12 @@
 <template>
-    <el-popover popper-class="search-cond-pop" :visible="displaySearchCondPop" placement="bottom">
+    <el-popover :popper-class="popperClass" :visible="displaySearchCondPop" :placement="placement">
         <template #reference>
-            <slot></slot>
+            <div @click="() => displaySearchCondPop = !displaySearchCondPop">
+                <slot></slot>
+            </div>
         </template>
-        <div class="search-cond__switch-wrapper" v-click-outside="() => displaySearchCondPop = false">
-            456
+        <div v-click-outside="() => displaySearchCondPop = false">
+            <slot name="content"></slot>
         </div>
     </el-popover>
 </template>
@@ -27,9 +29,12 @@ const props = defineProps({
 });
 // 控制显示
 const displaySearchCondPop = ref(false);
-</script>
 
-<style lang="scss" scoped></style>
+// 手动隐藏
+function hidePopover() {
+    displaySearchCondPop.value = false;
+}
+</script>
 
 <style lang="scss">
 .search-cond-pop {

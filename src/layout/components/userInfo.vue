@@ -87,7 +87,6 @@ onMounted(() => {
     // console.log(displayInfo);
     // console.log(JSON.stringify(user.value))
     // console.log(userStore.token);
-
 })
 
 /**
@@ -96,7 +95,7 @@ onMounted(() => {
  */
 // 上传头像之前
 const beforeUpload = (file) => {
-    console.log(file);
+    // console.log(file);
     if (file.type !== 'image/png' && file.type !== 'image/jpg') {
         ElMessage.warning('上传类型错误！');
         return false;

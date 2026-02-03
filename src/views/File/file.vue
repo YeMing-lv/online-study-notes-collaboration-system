@@ -2,7 +2,7 @@
  * @Author: Yeming-lv 1602552896@qq.com
  * @Date: 2025-12-11 08:43:14
  * @LastEditors: Yeming-lv 1602552896@qq.com
- * @LastEditTime: 2026-01-04 16:53:37
+ * @LastEditTime: 2026-01-29 15:32:15
  * @FilePath: \online-study-notes-collaboration-system\src\views\File\file.vue
  * @Description: 主要页面，包含了侧边文件夹导航栏、侧边文件夹内容导航栏、文件编辑器
  * 
@@ -26,25 +26,16 @@ import { useUserStore } from '../../store/user';
 import { ElMessage } from 'element-plus';
 import { updateFolder, createFolder, deleteFolder } from '../../api/apis/folder';
 
-/**
- * data
- * ————————————————————————————————————————————————————————————————————————————————————
- */
+//======================================data========================================
 const folders = reactive([]);
 const userStore = useUserStore();
 
-/**
- * 钩子函数
- * ——————————————————————————————————————————————————————————————————————————————
- */
+//=====================================钩子函数+====================================
 onMounted(() => {
     getFolders();
 })
 
-/**
- * methods
- * ————————————————————————————————————————————————————————————————————————————————————
- */
+//====================================methods========================================
 // 获取用户个人文件夹
 const getFolders = async () => {
     try {
@@ -87,6 +78,7 @@ const handleCreateFile = async ({ type, data }) => {
                 if (result.code === 200) {
                     getFolders();
                 }
+            //TODO 新建笔记
         }
     } catch (error) {
         console.error(error);
@@ -105,12 +97,12 @@ const handleDeleteFile = async (id) => {
     }
 }
 
-
 </script>
 
 <style lang="scss" scoped>
 .file-container {
     display: flex;
-
+    overflow: hidden;
+    height: 100vh;
 }
 </style>
