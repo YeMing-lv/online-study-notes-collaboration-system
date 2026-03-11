@@ -1,0 +1,21 @@
+.search-cond-pop {
+    padding: 0px !important;
+
+    ul {
+        padding: 5px 0px;
+        list-style-type: none;
+        user-select: none;
+
+        li {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px;
+            cursor: pointer;
+            font-size: small;
+        }
+
+        li:hover {
+            background-color: #efefef;
+        }
+    }
+}

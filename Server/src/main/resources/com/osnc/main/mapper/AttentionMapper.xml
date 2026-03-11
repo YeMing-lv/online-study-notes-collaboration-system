@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.osnc.main.mapper.AttentionMapper">
+
+    <!-- 查询某个用户关注的所有对象 -->
+    <select id="selectByFollower" resultType="com.osnc.main.pojo.dto.Attention">
+        SELECT *
+        FROM attention
+        WHERE att_follower = #{userId}
+    </select>
+
+    <!-- 查询某个用户的所有粉丝（关注他的人） -->
+    <select id="selectByFollowedUser" resultType="com.osnc.main.pojo.dto.Attention">
+        SELECT *
+        FROM attention
+        WHERE att_followed = #{userId}
+        AND att_type = 'user'
+    </select>
+
+    <!-- 查询某个话题的所有关注者 -->
+    <select id="selectByFollowedQuestion" resultType="com.osnc.main.pojo.dto.Attention">
+        SELECT *
+        FROM attention
+        WHERE att_followed = #{topicId}
+        AND att_type = 'question'
+    </select>
+
+</mapper>

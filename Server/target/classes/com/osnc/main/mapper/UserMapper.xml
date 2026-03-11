@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.osnc.main.mapper.UserMapper">
+
+    <select id="findByAccount" resultType="com.osnc.main.pojo.dto.User">
+        SELECT * FROM user WHERE user_account = #{userAccount}
+    </select>
+
+    <select id="ifTrueById" resultType="com.osnc.main.pojo.dto.User">
+        SELECT user_id FROM user WHERE user_id = #{userId}
+    </select>
+
+</mapper>

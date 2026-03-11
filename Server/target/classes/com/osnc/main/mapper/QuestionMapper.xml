@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.osnc.main.mapper.QuestionMapper">
+
+    <resultMap id="questionWithFirstAnswerMap" type="com.osnc.main.pojo.vo.QuestionWithFirstAnswer">
+            <id property="queId" column="que_id"/>
+            <result property="queTitle" column="que_title"/>
+            <result property="queLikeNum" column="que_like_num"/>
+        <association property="answerWithUser" javaType="com.osnc.main.pojo.vo.AnswerWithUser">
+            <id property="ansId" column="ans_id"/>
+            <result property="ansContent" column="ans_content"/>
+            <result property="ansTime" column="ans_time"/>
+            <result property="ansLikeNum" column="ans_like_num"/>
+            <result property="ansCommNum" column="ans_comm_num"/>
+
+            <result property="userId" column="user_id"/>
+            <result property="userName" column="user_name"/>
+            <result property="userHead" column="user_head"/>
+            <result property="userIntro" column="user_intro"/>
+        </association>
+    </resultMap>
+
+    <select id="getPageByRecommend" resultMap="questionWithFirstAnswerMap" >
+        SELECT
+            q.que_id, q.que_title, q.que_like_num,
+            a.ans_id , a.ans_content, a.ans_time, a.ans_like_num, a.ans_comm_num,
+            u.user_id , u.user_name, u.user_head, u.user_intro
+        FROM
+            Question q
+        LEFT JOIN
+            Answer a ON q.que_id = a.ans_que_id
+        LEFT JOIN
+            User u ON a.ans_author_id = u.user_id
+        WHERE a.ans_id = (
+            SELECT ans_id
+            FROM answer
+            WHERE ans_que_id = q.que_id
+            ORDER BY ans_time ASC
+            LIMIT 1
+        )
+        ORDER BY q.time DESC
+    </select>
+
+    <select id="getNewQuestion" resultType="com.osnc.main.pojo.dto.Question">
+        SELECT * FROM Question
+        WHERE que_id = LAST_INSERT_ID()
+    </select>
+
+    <select id="getPageByKeywordQuestion" resultMap="questionWithFirstAnswerMap">
+        SELECT
+            q.que_id, q.que_title, q.que_like_num,
+            a.ans_id , a.ans_content, a.ans_time, a.ans_like_num, a.ans_comm_num,
+            u.user_id , u.user_name, u.user_head, u.user_intro
+        FROM
+            Question q
+        LEFT JOIN (
+        -- 模拟 ROW_NUMBER() OVER (PARTITION BY ans_que_id ORDER BY ans_time DESC)
+        SELECT
+        ans.ans_id,
+        ans.ans_que_id,
+        @row_number := IF(@current_que_id = ans.ans_que_id, @row_number + 1, 1) AS rn,
+        @current_que_id := ans.ans_que_id AS dummy
+        FROM
+        Answer ans
+        CROSS JOIN (SELECT @row_number := 0, @current_que_id := NULL) vars
+        ORDER BY
+        ans.ans_que_id, ans.ans_time DESC
+        ) ranked_answers ON q.que_id = ranked_answers.ans_que_id AND ranked_answers.rn = 1
+        LEFT JOIN Answer a ON a.ans_id = ranked_answers.ans_id
+        LEFT JOIN User u ON a.ans_author_id = u.user_id
+        WHERE
+        q.que_title LIKE CONCAT('%', #{keyword}, '%') OR
+        q.que_content LIKE CONCAT('%', #{keyword}, '%')
+    </select>
+
+    <select id="getQueWithFAnsByAnswerId" resultMap="questionWithFirstAnswerMap">
+        SELECT
+            q.que_id, q.que_title, q.que_like_num,
+            a.ans_id , a.ans_content, a.ans_time, a.ans_like_num, a.ans_comm_num,
+            u.user_id , u.user_name, u.user_head, u.user_intro
+        FROM
+            Question q
+        LEFT JOIN
+            Answer a ON q.que_id = a.ans_que_id
+        LEFT JOIN
+            User u ON a.ans_author_id = u.user_id
+        WHERE a.ans_id = #{id}
+    </select>
+
+</mapper>

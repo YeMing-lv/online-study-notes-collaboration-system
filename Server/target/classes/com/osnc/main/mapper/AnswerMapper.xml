@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.osnc.main.mapper.AnswerMapper">
+
+    <resultMap id="AnswerWithUserMap" type="com.osnc.main.pojo.vo.AnswerWithUser">
+        <id property="ansId" column="ans_id"/>
+        <result property="ansContent" column="ans_content"/>
+        <result property="ansTime" column="ans_time"/>
+        <result property="ansLikeNum" column="ans_like_num"/>
+        <result property="ansCommNum" column="ans_comm_num"/>
+
+        <result property="userId" column="user_id"/>
+        <result property="userName" column="user_name"/>
+        <result property="userHead" column="user_head"/>
+        <result property="userIntro" column="user_intro"/>
+    </resultMap>
+
+    <select id="getPageById" resultMap="AnswerWithUserMap">
+        SELECT
+        a.*,
+        u.*
+        FROM
+        Answer a
+        JOIN User u ON a.ans_author_id = u.user_id
+        WHERE 1=1
+        <if test="type != '' and type == 'question'">
+            and a.ans_que_id = #{id}
+        </if>
+        <if test="type != '' and type == 'article'">
+            and a.ans_art_id = #{id}
+        </if>
+    </select>
+
+    <select id="getLastInsertAnswer" resultMap="AnswerWithUserMap">
+        SELECT a.*, u.* FROM Answer a
+        JOIN User u ON a.ans_author_id = u.user_id
+        WHERE a.ans_id = LAST_INSERT_ID()
+    </select>
+
+</mapper>

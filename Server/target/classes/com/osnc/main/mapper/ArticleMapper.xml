@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.osnc.main.mapper.ArticleMapper">
+
+    <!-- 查询推荐文章列表 -->
+    <select id="selectRecommendList" resultType="com.osnc.main.pojo.dto.Article">
+        SELECT *
+        FROM article
+        ORDER BY art_time DESC
+    </select>
+
+    <!-- 根据关键词查询文章 -->
+    <select id="selectByKeyword" resultType="com.osnc.main.pojo.dto.Article">
+        SELECT *
+        FROM article
+        WHERE art_title LIKE CONCAT('%', #{keyword}, '%')
+        OR art_tag LIKE CONCAT('%', #{keyword}, '%')
+        OR art_content LIKE CONCAT('%', #{keyword}, '%')
+    </select>
+
+</mapper>

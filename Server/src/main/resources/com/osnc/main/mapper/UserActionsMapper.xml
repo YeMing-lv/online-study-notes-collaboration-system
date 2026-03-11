@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.osnc.main.mapper.UserActionsMapper">
+
+    <resultMap id="userActionsMap" type="com.osnc.main.pojo.vo.UserActionsMap">
+            <id property="id" column="id"/>
+            <result property="eventType" column="event_type"/>
+            <result property="elementId" column="element_id"/>
+            <result property="elementName" column="element_name"/>
+            <result property="time" column="time"/>
+    </resultMap>
+
+    <select id="selectByUserId" resultMap="userActionsMap">
+        SELECT
+            ua.id, ua.event_type, ua.element_id, ua.time, ua.element_name
+        FROM
+            user_actions ua
+        WHERE
+            ua.user_id = #{id}
+        ORDER BY ua.time DESC
+    </select>
+
+</mapper>
