@@ -2,41 +2,44 @@
  * @Author: Yeming-lv 1602552896@qq.com
  * @Date: 2025-12-31 14:47:43
  * @LastEditors: Yeming-lv 1602552896@qq.com
- * @LastEditTime: 2026-03-03 13:49:53
- * @FilePath: \online-study-notes-collaboration-system\src\layout\editor.vue
+ * @LastEditTime: 2026-03-12 17:27:16
+ * @FilePath: \webapp\src\layout\editor.vue
  * @Description: 
  * 
  * Copyright (c) 2026 by ${git_name_email}, All Rights Reserved. 
 -->
 <template>
     <el-container class="editor-container">
-        <el-header class="title-header">
-            <span class="th-title">{{ title }}</span>
-            <el-row class="th-right-container" :gutter="20">
-                <el-col :span="8">
-                    <el-button type="primary" size="default" @click="">保存</el-button>
-                </el-col>
-                <el-col :span="12">
-                    <el-row :gutter="10">
-                        <el-col :span="12">
-                            <el-icon>
-                                <Star />
-                            </el-icon>
-                        </el-col>
-                        <el-col :span="12">
-                            <el-icon>
-                                <Share />
-                            </el-icon>
-                        </el-col>
-                    </el-row>
-                </el-col>
-            </el-row>
-        </el-header>
-        <el-divider style="margin: 0;" />
-        <Toolbar class="toolbar-header" :editor="editorRef" :default-config="toolbarConfig" />
-        <el-divider style="margin: 0;" />
-        <Editor class="content-main" :default-config="editorConfig" v-model="valueHtml" @onCreated="handleCreated"
-            @onChange="handleChange" @onDestroyed="handleDestroyed()" />
+        <el-empty v-if="Object.keys(currentEdit).length == 0" style="width: 100%;" description="快创建笔记吧" image="../src/assets/note.png" image-size="120"></el-empty>
+        <div v-else>
+            <el-header class="title-header">
+                <span class="th-title">{{ title }}</span>
+                <el-row class="th-right-container" :gutter="20">
+                    <el-col :span="8">
+                        <el-button type="primary" size="default" @click="saveNote('active')">保存</el-button>
+                    </el-col>
+                    <el-col :span="12">
+                        <el-row :gutter="10">
+                            <el-col :span="12">
+                                <el-icon>
+                                    <Star />
+                                </el-icon>
+                            </el-col>
+                            <el-col :span="12">
+                                <el-icon>
+                                    <Share />
+                                </el-icon>
+                            </el-col>
+                        </el-row>
+                    </el-col>
+                </el-row>
+            </el-header>
+            <el-divider style="margin: 0;" />
+            <Toolbar class="toolbar-header" :editor="editorRef" :default-config="toolbarConfig" />
+            <el-divider style="margin: 0;" />
+            <Editor class="content-main" :default-config="editorConfig" v-model="valueHtml" @onCreated="handleCreated"
+                @onChange="handleChange" @onDestroyed="handleDestroyed()" />
+        </div>
     </el-container>
 </template>
 
@@ -49,19 +52,22 @@ import { extractImagePath } from '../utils/imageUtils';
 import { useUserStore } from '../store/user';
 import { deleteImage } from '../api/apis/image';
 import { useCurrEditStore } from '../store/currentEdit';
+import { ElMessage } from 'element-plus';
+import { updateNote, saveNoteVersion } from '../api/apis/note';
 
 const userStore = useUserStore();
 const currentEditStore = useCurrEditStore();
 const currentEdit = computed(() => currentEditStore.currentEdit);
 
 const editorRef = shallowRef(); // 编辑器实例，必须用 shallowRef，重要!
-const title = ref('');
-const valueHtml = ref('Hello! 121212jkkjkasd'); // 内容 HTML
+const title = ref(currentEdit.value.title || '');
+const valueHtml = ref(currentEdit.value.content || ''); // 内容 HTML
 const imageList1 = reactive([]); // 图片列表 所有插入的图片 包括编辑器里删除的图片
 
 //===============================侦听器=============================
+// 读取选中笔记内容
 watch(currentEdit, (newValue) => {
-    if (currentEdit != {} && currentEdit != null) {
+    if (Object.keys(currentEdit.value).length != 0) {
         valueHtml.value = currentEdit.value.content;
         title.value = currentEdit.value.title;
     }
@@ -126,45 +132,65 @@ const handleCreated = (editor) => {
 
 const handleChange = (editor) => {
     editorRef.value = editor;
-    // console.log(editorRef.value);
 };
 
 // 编辑器销毁之前 进行保存
 const handleDestroyed = (editor) => {
-    if (ifNewInput()) { // 编辑器已有输入 并且还未保存过
-        ElMessageBox.confirm('是否要保存草稿?', '有未保存的修改',
-            {
-                confirmButtonText: '确认',
-                cancelButtonText: '拒绝',
-                type: 'warning'
-            }
-        ).then(() => {
-            saveWrite();
-        }).catch(() => {
-            // 删除没有保存的图片资源
-            deleteNotusedImage();
-        });
-    }
+    // if (ifNewInput()) { // 编辑器已有输入 并且还未保存过
+    //     ElMessageBox.confirm('是否要保存草稿?', '有未保存的修改',
+    //         {
+    //             confirmButtonText: '确认',
+    //             cancelButtonText: '拒绝',
+    //             type: 'warning'
+    //         }
+    //     ).then(() => {
+    //         saveWrite();
+    //     }).catch(() => {
+    //         // 删除没有保存的图片资源
+    //         deleteNotusedImage();
+    //     });
+    // }
     editorRef.value = editor; // 记录 editor 实例，重要！！！！
 };
 
 //==============================编辑器管理===========================
+// TODO 主动保存、自动保存、快捷键保存
 // 保存
-const saveContent = async () => {
-    // if (!ifNewInput()) { // 是否有新输入
-    //     ElMessage.info("请先输入新内容！")
-    //     return;
-    // }
+const saveNote = async (type) => {
+    if (!ifNewInput()) return;
+
+    // 先保存note_version笔记版本草稿
+    const result = await saveNoteVersion({
+        noteId: currentEdit.value.id,
+        title: currentEdit.value.title,
+        content: currentEdit.value.content
+    });
+    if (result.code == 200) {
+        if (type == 'active') {
+            ElMessage.success("保存成功！");
+        }
+        // 保存新笔记
+        currentEditStore.setCurrentEdit()
+        const result = await updateNote(currentEdit.value)
+    }
+
 }
 
 // 判断是否有新内容
-const ifNewInput = (title, content) => {
-    return true;
+const ifNewInput = () => {
+    if (currentEdit.value.title == title.value && currentEdit.value.content == valueHtml.value) {
+        return false;
+    } else {
+        if (title.value == null || valueHtml.value == null) {
+            ElMessage.warning("标题或内容不能为空！");
+            return false;
+        }
+        return true;
+    }
 }
 
 // 初始化编辑器内容
 function initEditContent() {
-    editDraft.value = null;
     valueHtml.value = '<p>hello</p>';
     imageList1.values = [];
 }

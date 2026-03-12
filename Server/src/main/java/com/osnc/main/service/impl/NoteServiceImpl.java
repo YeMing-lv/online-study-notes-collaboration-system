@@ -47,4 +47,13 @@ public class NoteServiceImpl extends ServiceImpl<NoteMapper, Note> implements No
         }
         return Result.success(result);
     }
+
+    @Override
+    public Result updateNote(Note note) {
+        int result = noteMapper.updateById(note);
+        if (result == 0) {
+            return Result.failure(result);
+        }
+        return Result.success(result);
+    }
 }

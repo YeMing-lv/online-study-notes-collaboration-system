@@ -20,4 +20,6 @@ public interface NoteService extends IService<Note> {
     List<Note> listRecycleByUserId(Long userId);
 
     Result getNoteById(Long id);
+
+    Result updateNote(Note note);
 }

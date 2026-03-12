@@ -29,6 +29,8 @@
 import { onMounted, ref } from 'vue';
 import userLogForm from './components/userLogForm.vue';
 import { useUserStore } from '../../store/user';
+import { useFolderStore } from '../../store/folder';
+import { useCurrEditStore } from '../../store/currentEdit';
 
 /**
  * data
@@ -36,6 +38,8 @@ import { useUserStore } from '../../store/user';
 // 登录、注册状态切换
 const isLogOrReg = ref(true);
 const userStore = useUserStore();
+const folderStore = useFolderStore();
+const currEditStore = useCurrEditStore();
 
 /**
  * 生命周期钩子
@@ -44,6 +48,8 @@ onMounted(() => {
     // console.log(isLogOrReg.value);
     // 清理用户身份信息
     userStore.initState();
+    folderStore.init();
+    currEditStore.init();
     // console.log(userStore.user);
 })
 

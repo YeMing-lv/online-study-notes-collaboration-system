@@ -2,8 +2,8 @@
  * @Author: Yeming-lv 1602552896@qq.com
  * @Date: 2026-01-29 15:04:57
  * @LastEditors: Yeming-lv 1602552896@qq.com
- * @LastEditTime: 2026-02-03 15:43:11
- * @FilePath: \online-study-notes-collaboration-system\src\store\currentEdit.js
+ * @LastEditTime: 2026-03-12 15:27:00
+ * @FilePath: \webapp\src\store\currentEdit.js
  * @Description: 
  * 
  * Copyright (c) 2026 by ${git_name_email}, All Rights Reserved. 
@@ -27,5 +27,6 @@ export const useCurrEditStore = defineStore('currentEdit', {
         setCurrentEdit(file) {
             this.currentEdit = file;
         }
-    }
+    },
+    persist: true
 })

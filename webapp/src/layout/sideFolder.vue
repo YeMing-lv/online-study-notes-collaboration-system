@@ -2,8 +2,8 @@
  * @Author: Yeming-lv 1602552896@qq.com
  * @Date: 2025-12-11 11:17:14
  * @LastEditors: Yeming-lv 1602552896@qq.com
- * @LastEditTime: 2026-02-05 14:31:49
- * @FilePath: \online-study-notes-collaboration-system\src\layout\sideFolder.vue
+ * @LastEditTime: 2026-03-12 16:25:23
+ * @FilePath: \webapp\src\layout\sideFolder.vue
  * @Description: 侧边的文件夹导航栏，能进行条件搜索、文件夹导航、显示文件夹内的文件
  * 
  * Copyright (c) 2026 by ${git_name_email}, All Rights Reserved. 
@@ -51,8 +51,7 @@
             <div class="default-img" v-if="fileList.length === 0">
                 <img src="../assets/file-background.png">
             </div>
-            <div class="file" v-else v-for="file in fileList" :key="file.id"
-                @click="handleFileClick(file)">
+            <div class="file" v-else v-for="file in fileList" :key="file.id" @click="handleFileClick(file)">
                 <div class="file-title">
                     <img :src="file.type === 1 ? getImgUrl('folder.png') : getImgUrl('markdown.png')" alt="">
                     <span class="title">{{ file.name || file.title }}</span>
@@ -78,7 +77,7 @@
 </template>
 <script setup>
 import { ref, reactive, computed, onMounted, watch } from 'vue';
-import { ClickOutside as VClickOutside } from 'element-plus';
+import { ElMessage, ClickOutside as VClickOutside } from 'element-plus';
 import { useFolderStore } from '../store/folder';
 import { useUserStore } from '../store/user.js';
 import { useCurrEditStore } from '@/store/currentEdit';
@@ -87,6 +86,7 @@ import { formatTime } from '@/utils/timeHandle.js';
 import { getImgUrl } from '../utils/assetsImport.js';
 import popover from '../components/popover.vue';
 import { Search } from '@element-plus/icons-vue';
+import { getNoteById } from '../api/apis/note';
 
 //=======================================data===================================
 // 搜索栏
@@ -131,6 +131,11 @@ const fileList = ref([]);
 
 
 //========================================钩子函数========================================
+onMounted(() => {
+    if (Object.keys(currentFolder.value).length != 0) {
+        searchFile();
+    }
+})
 
 //======================================侦听器============================================
 watch(currentFolder, (newV, oldV) => {
@@ -194,8 +199,14 @@ const deleteFile = (id) => {
 
 }
 
+// TODO 文件列表的移动
+// 移动
+const moveFile = (id) => {
+    // 修改文件的parentId父类ID。改完再重新搜索下。
+}
+
 // 处理文件的点击
-const handleFileClick = (data) => {
+const handleFileClick = async (data) => {
     if (!data.type || !data.id) return;
     switch (data.type) {
         // 文件夹
@@ -203,7 +214,13 @@ const handleFileClick = (data) => {
             folderStore.setCurrentFolder(data);
         // 笔记
         case 2:
-            currentEditStore.setCurrentEdit(data);
+            const result = await getNoteById(data.id);
+            if (result.code = 200) {
+                currentEditStore.setCurrentEdit(result.data);
+            } else {
+                console.error("GetNoteByID Failed: "+ result.message);
+                ElMessage.warning("查询笔记失败！");
+            }
     }
 }
 

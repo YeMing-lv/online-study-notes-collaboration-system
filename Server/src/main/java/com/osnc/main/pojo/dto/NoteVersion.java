@@ -26,11 +26,11 @@ public class NoteVersion {
     @TableField("note_id")
     private Long noteId;
 
+    @TableField("title")
+    private String title;
+
     @TableField("content")
     private String content;
-
-    @TableField("version_num")
-    private Integer versionNum;
 
     @TableField("edit_remark")
     private String editRemark;

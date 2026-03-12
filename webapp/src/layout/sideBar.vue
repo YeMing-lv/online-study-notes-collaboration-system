@@ -2,8 +2,8 @@
  * @Author: Yeming-lv 1602552896@qq.com
  * @Date: 2025-12-11 11:09:12
  * @LastEditors: Yeming-lv 1602552896@qq.com
- * @LastEditTime: 2026-02-05 16:41:19
- * @FilePath: \online-study-notes-collaboration-system\src\layout\sideBar.vue
+ * @LastEditTime: 2026-03-12 16:39:03
+ * @FilePath: \webapp\src\layout\sideBar.vue
  * @Description: 侧边文件夹导航栏，包含了个人用户管理、新建文件、文件夹导航
  * 
  * Copyright (c) 2026 by ${git_name_email}, All Rights Reserved. 
@@ -138,18 +138,21 @@ const sideBarRef = ref();
 const handleFolder = ref(folderStore.currentFolder);
 
 // 记录树的展开状态
-const defaultExpandedKeys = ref([]);
+const defaultExpandedKeys = computed(() => folderStore.defaultExpandedKeys);
 
 // ==================================钩子函数========================================
 onMounted(() => {
-    // console.log(currentFolder.value);
+    if (Object.keys(currentFolder.value).length != 0) {
+        sideBarRef.value.open('myFolder');
+        treeFoldersRef.value.setCurrentKey(currentFolder.value.id, true);
+    }
 })
 
 // ==================================侦听器===========================================
 watch(() => myFolders, async (newV, oldV) => {
     handleHideMorePop();
 }, { deep: true })
-// TODO 监听store的currentFolder，修改elTree选中状态
+// 监听store的currentFolder，修改elTree选中状态
 watch(currentFolder, (newValue) => {
     if (currentFolder.value) {
         treeFoldersRef.value.setCurrentKey(currentFolder.value.id, true);
@@ -191,14 +194,14 @@ const handleFolderClick = (data, node, tree, event) => {
     // }
     // folderStore.folderRoutes = parentDatas;
     folderStore.setCurrentFolder(data);
-    console.log(tree);
-    console.log(node);
+    // console.log(tree);
+    // console.log(node);
 
     // 记录展开的节点
     if (node.expanded) {
-        defaultExpandedKeys.value.push(data.id);
+        folderStore.defaultExpandedKeys.push(data.id);
     } else {
-        defaultExpandedKeys.value = defaultExpandedKeys.value.filter((item) => item !== data.id);
+        folderStore.defaultExpandedKeys = defaultExpandedKeys.value.filter((item) => item !== data.id);
     }
 }
 

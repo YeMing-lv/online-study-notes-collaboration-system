@@ -1,6 +1,7 @@
 package com.osnc.main.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.osnc.main.common.Result;
 import com.osnc.main.pojo.dto.NoteVersion;
 
 import java.util.List;
@@ -13,5 +14,7 @@ import java.util.List;
 public interface NoteVersionService extends IService<NoteVersion> {
 
     // 自定义方法示例：根据笔记ID查询版本历史（按版本号降序）
-    List<NoteVersion> listByNoteIdOrderByVersionNumDesc(Long noteId);
+    Result listByNoteIdOrderByVersionNumDesc(Long noteId);
+
+    Result saveNoteVersion(NoteVersion noteVersion);
 }
