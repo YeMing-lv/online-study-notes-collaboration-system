@@ -8,9 +8,13 @@
         align-items: center;
         justify-content: space-between;
 
-        .th-title {
+        .th-input {
+            width: 100%;
+            margin-right: 10px;
             font-size: larger;
             font-weight: 600;
+            border: none;
+            outline: none;
         }
 
         .th-right-container {
@@ -34,16 +38,23 @@
         padding: 5px;
     }
 
-    .content-main {
-        padding: 10px;
+    .ed-container {
         height: 100%;
-        overflow-y: scroll;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
 
-        &::-webkit-scrollbar {
-            width: 0 !important;
-            height: 0 !important;
-            background-color: transparent;
-            border: none;
+        .content-main {
+            padding: 0px 10px;
+            overflow: scroll;
+
+            &::-webkit-scrollbar {
+                width: 0 !important;
+                height: 0 !important;
+                background-color: transparent;
+                border: none;
+            }
         }
     }
+
 }

@@ -2,7 +2,7 @@
  * @Author: Yeming-lv 1602552896@qq.com
  * @Date: 2025-12-31 14:47:43
  * @LastEditors: Yeming-lv 1602552896@qq.com
- * @LastEditTime: 2026-03-12 17:27:16
+ * @LastEditTime: 2026-03-13 16:27:38
  * @FilePath: \webapp\src\layout\editor.vue
  * @Description: 
  * 
@@ -10,10 +10,12 @@
 -->
 <template>
     <el-container class="editor-container">
-        <el-empty v-if="Object.keys(currentEdit).length == 0" style="width: 100%;" description="快创建笔记吧" image="../src/assets/note.png" image-size="120"></el-empty>
-        <div v-else>
+        <el-empty v-if="Object.keys(currentEdit).length == 0" style="width: 100%;" description="快创建笔记吧"
+            image="../src/assets/note.png" image-size="120"></el-empty>
+        <div class="ed-container" v-else>
             <el-header class="title-header">
-                <span class="th-title">{{ title }}</span>
+                <input id="th-input" class="th-input" type="text" v-model="title" autocomplete="off">
+                <!-- <span class="th-title">{{ title }}</span> -->
                 <el-row class="th-right-container" :gutter="20">
                     <el-col :span="8">
                         <el-button type="primary" size="default" @click="saveNote('active')">保存</el-button>
@@ -38,7 +40,7 @@
             <Toolbar class="toolbar-header" :editor="editorRef" :default-config="toolbarConfig" />
             <el-divider style="margin: 0;" />
             <Editor class="content-main" :default-config="editorConfig" v-model="valueHtml" @onCreated="handleCreated"
-                @onChange="handleChange" @onDestroyed="handleDestroyed()" />
+                    @onChange="handleChange" @onDestroyed="handleDestroyed()" />
         </div>
     </el-container>
 </template>
@@ -52,7 +54,7 @@ import { extractImagePath } from '../utils/imageUtils';
 import { useUserStore } from '../store/user';
 import { deleteImage } from '../api/apis/image';
 import { useCurrEditStore } from '../store/currentEdit';
-import { ElMessage } from 'element-plus';
+import { ElMessage, ElScrollbar } from 'element-plus';
 import { updateNote, saveNoteVersion } from '../api/apis/note';
 
 const userStore = useUserStore();
@@ -60,18 +62,9 @@ const currentEditStore = useCurrEditStore();
 const currentEdit = computed(() => currentEditStore.currentEdit);
 
 const editorRef = shallowRef(); // 编辑器实例，必须用 shallowRef，重要!
-const title = ref(currentEdit.value.title || '');
-const valueHtml = ref(currentEdit.value.content || ''); // 内容 HTML
+const title = ref(JSON.parse(JSON.stringify(currentEdit.value.title)) || '');
+const valueHtml = ref(JSON.parse(JSON.stringify(currentEdit.value.content)) || ''); // 内容 HTML
 const imageList1 = reactive([]); // 图片列表 所有插入的图片 包括编辑器里删除的图片
-
-//===============================侦听器=============================
-// 读取选中笔记内容
-watch(currentEdit, (newValue) => {
-    if (Object.keys(currentEdit.value).length != 0) {
-        valueHtml.value = currentEdit.value.content;
-        title.value = currentEdit.value.title;
-    }
-})
 
 //============================生命周期钩子=======================
 // 退出页面 确认是否保存草稿
@@ -82,6 +75,29 @@ onBeforeUnmount(() => {
     if (editor == null) return
     editor.destroy()
 });
+
+//===============================侦听器=============================
+// 读取选中笔记内容
+watch(currentEdit, (newValue, oldV) => {
+    console.log(newValue);
+    console.log(oldV);
+    if (Object.keys(oldV).length != 0) {
+        saveNote
+    }
+    
+    if (Object.keys(currentEdit.value).length != 0) {
+        valueHtml.value = currentEdit.value.content;
+        title.value = currentEdit.value.title;
+    }
+})
+
+// 监听Ctrl+S快捷键，保存笔记
+document.addEventListener("keydown", (event) => {    
+    if (event.ctrlKey && event.code == 'KeyS') {
+        saveNote('active');
+        event.returnValue = false;
+    }
+})
 
 //=============================编辑器配置========================
 const toolbarConfig = {
@@ -136,27 +152,15 @@ const handleChange = (editor) => {
 
 // 编辑器销毁之前 进行保存
 const handleDestroyed = (editor) => {
-    // if (ifNewInput()) { // 编辑器已有输入 并且还未保存过
-    //     ElMessageBox.confirm('是否要保存草稿?', '有未保存的修改',
-    //         {
-    //             confirmButtonText: '确认',
-    //             cancelButtonText: '拒绝',
-    //             type: 'warning'
-    //         }
-    //     ).then(() => {
-    //         saveWrite();
-    //     }).catch(() => {
-    //         // 删除没有保存的图片资源
-    //         deleteNotusedImage();
-    //     });
-    // }
+    saveNote();
+    deleteNotusedImage();
     editorRef.value = editor; // 记录 editor 实例，重要！！！！
 };
 
 //==============================编辑器管理===========================
-// TODO 主动保存、自动保存、快捷键保存
+// TODO 主动保存、自动保存、快捷键保存、切换笔记前保存
 // 保存
-const saveNote = async (type) => {
+const saveNote = async (type, note) => {
     if (!ifNewInput()) return;
 
     // 先保存note_version笔记版本草稿
@@ -166,14 +170,22 @@ const saveNote = async (type) => {
         content: currentEdit.value.content
     });
     if (result.code == 200) {
-        if (type == 'active') {
-            ElMessage.success("保存成功！");
-        }
         // 保存新笔记
-        currentEditStore.setCurrentEdit()
-        const result = await updateNote(currentEdit.value)
+        const newNote = {
+            ...currentEdit.value,
+            content: valueHtml.value,
+            title: title.value,
+            updateTime: new Date()
+        };
+        console.log(newNote);
+        // const result = await updateNote(newNote);
+        // if (result.code == 200) {
+        //     if (type == 'active') {
+        //         ElMessage.success("保存成功！");
+        //     }
+        //     currentEditStore.setCurrentEdit(newNote);
+        // }
     }
-
 }
 
 // 判断是否有新内容
@@ -181,7 +193,7 @@ const ifNewInput = () => {
     if (currentEdit.value.title == title.value && currentEdit.value.content == valueHtml.value) {
         return false;
     } else {
-        if (title.value == null || valueHtml.value == null) {
+        if (title.value === '' || valueHtml.value === '') {
             ElMessage.warning("标题或内容不能为空！");
             return false;
         }
@@ -191,7 +203,8 @@ const ifNewInput = () => {
 
 // 初始化编辑器内容
 function initEditContent() {
-    valueHtml.value = '<p>hello</p>';
+    title.value = '';
+    valueHtml.value = '';
     imageList1.values = [];
 }
 

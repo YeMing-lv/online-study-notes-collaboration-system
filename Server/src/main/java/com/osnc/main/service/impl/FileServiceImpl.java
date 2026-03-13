@@ -91,9 +91,19 @@ public class FileServiceImpl extends ServiceImpl<FileMapper, File> implements Fi
             // 原生实体 → 转Map → 追加type=2 → 加入结果集
             List<Note> noteList = noteMapper.selectList(wrapper);
             List<Map<String, Object>> noteMapList = noteList.stream().map(note -> {
-                // 先把HTML转为纯文本，并截取一定长度
-                String endContent = note.getContent().replaceAll("<[^>]+>", "").substring(0, 100) + "...";
-                note.setContent(endContent);
+                // ========== 核心修复：HTML转纯文本+安全截取 ==========
+                String originalContent = note.getContent();
+                String shortText = ""; // 空值兜底
+
+                // 非空时处理，空值直接用空字符串
+                if (originalContent != null && !originalContent.isEmpty()) {
+                    // HTML转纯文本（移除所有标签）
+                    String plainText = originalContent.replaceAll("<[^>]+>", "");
+                    int maxLength = 100;
+                    // 安全截取：长度不足100取全部，否则截取+省略号
+                    shortText = plainText.length() <= maxLength ? plainText : plainText.substring(0, maxLength) + "...";
+                }
+                note.setContent(shortText);
 
                 Map<String, Object> map = new HashMap<>(16);
                 map.put("id", note.getId());
