@@ -1,7 +1,17 @@
+<!--
+ * @Author: Yeming-lv 1602552896@qq.com
+ * @Date: 2026-03-11 14:36:43
+ * @LastEditors: Yeming-lv 1602552896@qq.com
+ * @LastEditTime: 2026-03-19 16:55:04
+ * @FilePath: \webapp\src\components\popover.vue
+ * @Description: 
+ * 
+ * Copyright (c) 2026 by ${git_name_email}, All Rights Reserved. 
+-->
 <template>
     <el-popover :popper-class="popperClass" :visible="displaySearchCondPop" :placement="placement">
         <template #reference>
-            <div @click="() => displaySearchCondPop = !displaySearchCondPop">
+            <div @click.stop="() => displaySearchCondPop = !displaySearchCondPop">
                 <slot></slot>
             </div>
         </template>

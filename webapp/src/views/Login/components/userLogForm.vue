@@ -2,8 +2,8 @@
  * @Author: Yeming-lv 1602552896@qq.com
  * @Date: 2025-12-12 17:26:01
  * @LastEditors: Yeming-lv 1602552896@qq.com
- * @LastEditTime: 2026-03-04 14:27:36
- * @FilePath: \online-study-notes-collaboration-system\src\views\Login\components\userLogForm.vue
+ * @LastEditTime: 2026-03-19 16:07:23
+ * @FilePath: \webapp\src\views\Login\components\userLogForm.vue
  * @Description: 登录/注册表单，对表单进行滑动验证管理和表单校验。
  * 
  * Copyright (c) 2026 by ${git_name_email}, All Rights Reserved. 
@@ -138,10 +138,10 @@ const ifVcode = () => {
     updateVcodeData();
     const endTime = 3 * 60 * 1000;
 
-    if (failVcodeNum <= 3) {
+    if (failVcodeNum.value <= 3) {
         return true;
     } else {
-        const startTime = new Date(enableVcodeTime);
+        const startTime = new Date(enableVcodeTime.value);
 
         if ((startTime.getTime() + endTime) < new Date().getTime()) {
             return false;
@@ -158,7 +158,7 @@ const ifVcode = () => {
 const updateVcodeData = () => {
     if (!lastVcodeTime) return;
 
-    const lastTime = new Date(lastVcodeTime);
+    const lastTime = new Date(lastVcodeTime.value);
     const updateTime = 30 * 60 * 1000;
     if (isNaN(lastTime.getTime())) return;
 
@@ -187,15 +187,15 @@ const successVcode = () => {
  * 验证失败
  */
 const failVcode = () => {
-    failVcodeNum++;
-    if (failVcodeNum > 3) {
+    userStore.verify.failVcodeNum = failVcodeNum.value + 1;
+    if (failVcodeNum.value > 3) {
         displayVcode.value = false;
-        enableVcodeTime = new Date();
+        userStore.verify.enableVcodeTime = new Date();
         ElMessage.error(`验证失败超过 3 次，限制3分钟后才能再次操作`);
     } else {
-        ElMessage(`已验证失败 ${failVcodeNum} 次，超过 3 次后限制等待 3 分钟才能再操作`);
+        ElMessage(`已验证失败 ${failVcodeNum.value} 次，超过 3 次后限制等待 3 分钟才能再操作`);
     }
-    lastVcodeTime = new Date();
+    userStore.verify.lastVcodeTime = new Date();
     saveVcodeData();
 }
 

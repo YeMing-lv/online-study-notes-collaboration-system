@@ -2,7 +2,7 @@
  * @Author: Yeming-lv 1602552896@qq.com
  * @Date: 2025-12-11 11:09:12
  * @LastEditors: Yeming-lv 1602552896@qq.com
- * @LastEditTime: 2026-03-12 16:39:03
+ * @LastEditTime: 2026-03-20 15:27:16
  * @FilePath: \webapp\src\layout\sideBar.vue
  * @Description: 侧边文件夹导航栏，包含了个人用户管理、新建文件、文件夹导航
  * 
@@ -152,10 +152,13 @@ onMounted(() => {
 watch(() => myFolders, async (newV, oldV) => {
     handleHideMorePop();
 }, { deep: true })
-// 监听store的currentFolder，修改elTree选中状态
+// 监听store的currentFolder
 watch(currentFolder, (newValue) => {
-    if (currentFolder.value) {
+    // 修改elTree选中状态
+    if (currentFolder.value && currentFolder.value.id != 0) {
         treeFoldersRef.value.setCurrentKey(currentFolder.value.id, true);
+    } else {
+        treeFoldersRef.value.setCurrentKey();
     }
 })
 
@@ -224,6 +227,7 @@ const handleMoreClick = (event, data) => {
 const createFile = async (type) => {
     switch (type) {
         case 'Folder':
+            // 隐藏操作弹框
             handleHideMorePop();
             await nextTick();
             isCreateFolder.value = true;

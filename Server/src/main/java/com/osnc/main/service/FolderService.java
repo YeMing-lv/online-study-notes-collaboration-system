@@ -21,4 +21,6 @@ public interface FolderService extends IService<Folder> {
     Result createFolder(Folder folder);
 
     Result deleteFolder(Long id);
+
+    Result getFolderByID(Long id);
 }

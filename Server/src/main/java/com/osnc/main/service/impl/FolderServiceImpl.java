@@ -78,6 +78,15 @@ public class FolderServiceImpl extends ServiceImpl<FolderMapper, Folder> impleme
         return Result.failure();
     }
 
+    @Override
+    public Result getFolderByID(Long id) {
+        Folder folder = folderMapper.selectById(id);
+        if (folder != null) {
+            return Result.success(folder);
+        }
+        return Result.failure(0);
+    }
+
     private void buildChildren(Folder parentFolder, List<Folder> allFolder) {
         List<Folder> children = allFolder.stream()
                 .filter(folder -> folder.getParentId().equals(parentFolder.getId()))

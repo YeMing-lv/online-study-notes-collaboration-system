@@ -2,7 +2,7 @@
  * @Author: Yeming-lv 1602552896@qq.com
  * @Date: 2025-12-11 11:17:14
  * @LastEditors: Yeming-lv 1602552896@qq.com
- * @LastEditTime: 2026-03-12 16:25:23
+ * @LastEditTime: 2026-03-20 16:40:04
  * @FilePath: \webapp\src\layout\sideFolder.vue
  * @Description: 侧边的文件夹导航栏，能进行条件搜索、文件夹导航、显示文件夹内的文件
  * 
@@ -46,7 +46,16 @@
                 {{ item.name }}
             </el-breadcrumb-item>
         </el-breadcrumb> -->
-        <span class="folder-title" v-if="currentFolder.id !== 0">{{ currentFolder.name }}</span>
+        <el-row justify="center" :gutter="20">
+            <el-col :span="2">
+                <el-icon style="padding-top: 5px;cursor: pointer;" @click="backToParentFolder()">
+                    <ArrowLeftBold />
+                </el-icon>
+            </el-col>
+            <el-col :span="22">
+                <span v-if="currentFolder.id !== 0">{{ currentFolder.name }}</span>
+            </el-col>
+        </el-row>
         <div class="files">
             <div class="default-img" v-if="fileList.length === 0">
                 <img src="../assets/file-background.png">
@@ -73,6 +82,7 @@
                 <div class="file-other">{{ formatTime(file.createTime, 'YYYY-MM-DD') }}</div>
             </div>
         </div>
+        <el-divider direction="horizontal" content-position="center">总共{{ pageParam.total }}项</el-divider>
     </div>
 </template>
 <script setup>
@@ -82,6 +92,7 @@ import { useFolderStore } from '../store/folder';
 import { useUserStore } from '../store/user.js';
 import { useCurrEditStore } from '@/store/currentEdit';
 import { listFileByFolderId } from '@/api/apis/file.js';
+import { getFolderByID } from '@/api/apis/folder.js';
 import { formatTime } from '@/utils/timeHandle.js';
 import { getImgUrl } from '../utils/assetsImport.js';
 import popover from '../components/popover.vue';
@@ -139,10 +150,10 @@ onMounted(() => {
 
 //======================================侦听器============================================
 watch(currentFolder, (newV, oldV) => {
-    // console.log(newV, oldV);
     if (currentFolder.value) {
         searchFile();
     }
+    // console.log(currentFolder.value)
 })
 
 //========================================methods======================================
@@ -156,7 +167,7 @@ const searchFile = async () => {
         const query = {
             userId: userStore.user.id,
             folderId: currentFolder.value.id,
-            ...pageParam
+            ...pageParam.value
         };
         // 添加排序条件
         if (currentOrderCond.value !== null) {
@@ -212,15 +223,29 @@ const handleFileClick = async (data) => {
         // 文件夹
         case 1:
             folderStore.setCurrentFolder(data);
+            break;
         // 笔记
         case 2:
             const result = await getNoteById(data.id);
-            if (result.code = 200) {
+            if (result?.code === 200) {
                 currentEditStore.setCurrentEdit(result.data);
             } else {
-                console.error("GetNoteByID Failed: "+ result.message);
+                console.error("GetNoteByID Failed: " + result.message);
                 ElMessage.warning("查询笔记失败！");
             }
+            break;
+    }
+}
+
+// 回到上一级文件夹
+const backToParentFolder = async () => {
+    if (currentFolder.value.parentId != 0) {
+        const result = await getFolderByID(currentFolder.value.parentId);
+        if (result.code == 200) {
+            folderStore.setCurrentFolder(result.data);
+        } else {
+            console.error("getFolderById Faile: " + result.message);
+        }
     }
 }
 

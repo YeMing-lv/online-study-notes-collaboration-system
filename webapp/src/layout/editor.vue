@@ -1,18 +1,18 @@
 <!--
  * @Author: Yeming-lv 1602552896@qq.com
- * @Date: 2025-12-31 14:47:43
+ * @Date: 2026-03-11 14:36:43
  * @LastEditors: Yeming-lv 1602552896@qq.com
- * @LastEditTime: 2026-03-13 16:27:38
+ * @LastEditTime: 2026-03-19 17:13:33
  * @FilePath: \webapp\src\layout\editor.vue
  * @Description: 
  * 
  * Copyright (c) 2026 by ${git_name_email}, All Rights Reserved. 
 -->
 <template>
-    <el-container class="editor-container">
+    <el-container v-loading="refresh" class="editor-container">
         <el-empty v-if="Object.keys(currentEdit).length == 0" style="width: 100%;" description="快创建笔记吧"
             image="../src/assets/note.png" image-size="120"></el-empty>
-        <div class="ed-container" v-else>
+        <div class="ed-container" v-else-if="!refresh">
             <el-header class="title-header">
                 <input id="th-input" class="th-input" type="text" v-model="title" autocomplete="off">
                 <!-- <span class="th-title">{{ title }}</span> -->
@@ -62,9 +62,11 @@ const currentEditStore = useCurrEditStore();
 const currentEdit = computed(() => currentEditStore.currentEdit);
 
 const editorRef = shallowRef(); // 编辑器实例，必须用 shallowRef，重要!
-const title = ref(JSON.parse(JSON.stringify(currentEdit.value.title)) || '');
-const valueHtml = ref(JSON.parse(JSON.stringify(currentEdit.value.content)) || ''); // 内容 HTML
+const title = ref(JSON.stringify(currentEdit.value.title) || '');
+const valueHtml = ref(JSON.stringify(currentEdit.value.content) || ''); // 内容 HTML
 const imageList1 = reactive([]); // 图片列表 所有插入的图片 包括编辑器里删除的图片
+
+const refresh = ref(false); // 刷新编辑器
 
 //============================生命周期钩子=======================
 // 退出页面 确认是否保存草稿
@@ -79,10 +81,20 @@ onBeforeUnmount(() => {
 //===============================侦听器=============================
 // 读取选中笔记内容
 watch(currentEdit, (newValue, oldV) => {
-    console.log(newValue);
-    console.log(oldV);
-    if (Object.keys(oldV).length != 0) {
-        saveNote
+    // console.log(newValue);
+    // console.log(oldV);
+
+    // if (Object.keys(oldV).length != 0) {
+    //     saveNote()
+    // }
+    
+
+    if (newValue.id !== oldV.id) {
+        // saveNote();
+        refresh.value = true;
+        setTimeout(() => {
+            refresh.value = false;
+        }, 1000)
     }
     
     if (Object.keys(currentEdit.value).length != 0) {
@@ -95,6 +107,7 @@ watch(currentEdit, (newValue, oldV) => {
 document.addEventListener("keydown", (event) => {    
     if (event.ctrlKey && event.code == 'KeyS') {
         saveNote('active');
+        // 禁止触发浏览器保存页面事件
         event.returnValue = false;
     }
 })
@@ -190,7 +203,7 @@ const saveNote = async (type, note) => {
 
 // 判断是否有新内容
 const ifNewInput = () => {
-    if (currentEdit.value.title == title.value && currentEdit.value.content == valueHtml.value) {
+    if (currentEdit.value.title === title.value && currentEdit.value.content === valueHtml.value) {
         return false;
     } else {
         if (title.value === '' || valueHtml.value === '') {

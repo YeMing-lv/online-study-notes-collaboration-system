@@ -1,5 +1,7 @@
 package com.osnc.main.controller;
 
+import com.osnc.main.service.impl.StarServiceImpl;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -11,5 +13,9 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/star")
 public class StarController {
+
+    @Autowired
+    private StarServiceImpl starService;
+
 
 }

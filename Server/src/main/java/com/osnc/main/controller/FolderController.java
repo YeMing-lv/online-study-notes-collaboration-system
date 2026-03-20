@@ -29,6 +29,11 @@ public class FolderController {
         return folderService.listFolderTreeByUserId(userId);
     }
 
+    @GetMapping
+    public Result getFolderByID(@RequestParam Long id) {
+        return folderService.getFolderByID(id);
+    }
+
     @PostMapping("/update")
     public Result updateFolder(@RequestBody Folder folder) {
         return folderService.updateFolder(folder);
