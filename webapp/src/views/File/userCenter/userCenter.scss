@@ -1,0 +1,44 @@
+.container {
+    display: flex;
+    flex-direction: column;
+    margin: 20px;
+    padding: 20px;
+    box-shadow: 2px 4px 10px #9f9f9f;
+
+    .day-title {
+        margin: 15px 0px;
+        display: flex;
+        justify-content: center;
+        align-self: center;
+        font-family: 'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
+        font-size: 30px;
+        font-weight: 800;
+    }
+
+    .el-row {
+        .el-col {
+            display: flex;
+            justify-content: center;
+        }
+    }
+
+    .static-container {
+        display: flex;
+        height: 100%;
+    }
+
+    .day-static {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        width: 150px;
+        height: 100px;
+        padding: 10px;
+        border-radius: 5px;
+    }
+
+    .chart-calendar {
+        margin-top: auto;
+    }
+}

@@ -2,7 +2,7 @@
  * @Author: Yeming-lv 1602552896@qq.com
  * @Date: 2025-12-31 11:42:29
  * @LastEditors: Yeming-lv 1602552896@qq.com
- * @LastEditTime: 2026-03-12 16:27:54
+ * @LastEditTime: 2026-04-30 16:40:42
  * @FilePath: \webapp\src\store\folder.js
  * @Description: 文件夹状态管理，记录当前查看的文件夹、文件夹路径
  * 
@@ -15,6 +15,8 @@ export const useFolderStore = defineStore('folderStore', {
         currentFolder: { id: 0, name: '' },
         // folderRoutes: [],
         defaultExpandedKeys: [], // 记录树形文件夹的展开状态
+        isRefreshFolder: false,
+        isRefreshTree: false,
     }),
     actions: {
         init() {
@@ -31,7 +33,7 @@ export const useFolderStore = defineStore('folderStore', {
         setCurrentFolder(folder) {
             this.currentFolder = folder;
         },
-        
+
     },
     persist: true
 })

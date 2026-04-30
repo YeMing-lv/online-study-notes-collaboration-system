@@ -1,13 +1,14 @@
 <!--
  * @Author: Yeming-lv 1602552896@qq.com
- * @Date: 2025-12-24 16:36:41
+ * @Date: 2026-03-11 14:36:43
  * @LastEditors: Yeming-lv 1602552896@qq.com
- * @LastEditTime: 2026-01-04 16:59:55
- * @FilePath: \online-study-notes-collaboration-system\src\layout\components\userAvatar.vue
- * @Description: 个人用户管理，可以编辑用户个人信息、设置、退出登录、新建文件
+ * @LastEditTime: 2026-04-30 15:05:31
+ * @FilePath: \webapp\src\layout\components\userAvatar.vue
+ * @Description: 
  * 
  * Copyright (c) 2026 by ${git_name_email}, All Rights Reserved. 
 -->
+
 <template>
     <div class="avatar-container">
         <el-popover popper-class="avatar-popover" placement="bottom" trigger="click">
@@ -70,13 +71,17 @@
             <div class="content" v-click-outside="() => displayCreatePop = false">
                 <span style="font-size: large;font-weight: 700;">新建文件</span>
                 <el-row :gutter="15">
-                    <el-col :span="6" @click="handleCreate">
-                        <el-image style="width: 40px;" :src="markDownImgUrl"></el-image>
-                        <span>笔记</span>
+                    <el-col :span="6">
+                        <div @click.stop="handleCreate('note')" class="create-option">
+                            <el-image style="width: 40px; pointer-events: none" :src="markDownImgUrl" />
+                            <span>笔记</span>
+                        </div>
                     </el-col>
-                    <el-col :span="6" @click="handleCreate">
-                        <el-image style="width: 40px" :src="folderImgUrl"></el-image>
-                        <span>文件夹</span>
+                    <el-col :span="6">
+                        <div @click.stop="handleCreate('folder')" class="create-option">
+                            <el-image style="width: 40px; pointer-events: none" :src="folderImgUrl" />
+                            <span>文件夹</span>
+                        </div>
                     </el-col>
                     <el-col :span="6">3</el-col>
                     <el-col :span="6">4</el-col>
@@ -88,7 +93,7 @@
 </template>
 <script setup>
 import { UserFilled, Plus, Setting, CircleCloseFilled } from '@element-plus/icons-vue';
-import { computed, ref } from 'vue';
+import { computed, ref, defineEmits } from 'vue';
 import userInfo from './userInfo.vue';
 import { useRouter } from 'vue-router';
 import { useUserStore } from '../../store/user';
@@ -118,6 +123,9 @@ const user = computed(() => userStore.user);
 // 显示新建弹框
 const displayCreatePop = ref(false);
 
+// 创建事件
+const emits = defineEmits(['create'])
+
 /**
  * methods
  * --------------------------------------------------
@@ -127,8 +135,9 @@ const logOut = () => {
 }
 
 // 提交新建事件
-const handleCreate = () => {
-
+const handleCreate = (type) => {
+    emits('create', type);
+    isShowPopover.value = false;
 }
 </script>
 
@@ -196,5 +205,13 @@ const handleCreate = () => {
             }
         }
     }
+}
+
+.create-option {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    user-select: none;
 }
 </style>

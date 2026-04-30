@@ -1,10 +1,14 @@
 package com.osnc.main.controller;
 
+import com.osnc.main.common.PageParam;
 import com.osnc.main.common.Result;
 import com.osnc.main.pojo.dto.Note;
 import com.osnc.main.pojo.dto.NoteVersion;
+import com.osnc.main.pojo.vo.NoteQuery;
 import com.osnc.main.service.impl.NoteServiceImpl;
 import com.osnc.main.service.impl.NoteVersionServiceImpl;
+import com.osnc.main.service.impl.ShareServiceImpl;
+import com.osnc.main.service.impl.StarServiceImpl;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -25,6 +29,12 @@ public class NoteController {
     @Autowired
     private NoteVersionServiceImpl noteVersionService;
 
+    @Autowired
+    private ShareServiceImpl shareService;
+
+    @Autowired
+    private StarServiceImpl starService;
+
     /**
      * 查询笔记
      * @param id
@@ -36,12 +46,32 @@ public class NoteController {
     }
 
     @PostMapping
-    public Result updateNote(@RequestBody Note note) {
+    public Result saveOrUpdateNote(@RequestBody Note note) {
         return noteService.updateNote(note);
     }
 
     /**
-     * 获取笔记列表
+     * 获取指定种类笔记列表
+     * @param noteQuery
+     * @return
+     */
+    @GetMapping("/list")
+    public Result listNote(@RequestBody NoteQuery noteQuery) {
+        if (noteQuery.getType().equals("")) return Result.failure("Failed listType!");
+
+        switch (noteQuery.getType()) {
+            case "new":
+                return noteService.listNewNote(noteQuery.getUserId());
+            case "share":
+                return shareService.listShareNote(noteQuery.getUserId());
+            case "star":
+                return starService.listStarNote(noteQuery.getUserId());
+        }
+        return Result.success("");
+    }
+
+    /**
+     * 获取笔记版本列表
      */
     @GetMapping("/version/getNoteVersionList")
     public Result getNoteVersionList(@RequestParam Long noteId) {
@@ -58,5 +88,16 @@ public class NoteController {
         log.info(String.valueOf(noteVersion));
         return noteVersionService.saveNoteVersion(noteVersion);
     }
+
+    @DeleteMapping
+    public Result deleteNote(@RequestParam Long id) {
+        boolean result = noteService.removeById(id);
+        if (result) {
+            return Result.success("");
+        }
+        return Result.failure();
+    }
+
+
 
 }

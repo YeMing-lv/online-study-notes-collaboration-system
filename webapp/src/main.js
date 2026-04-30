@@ -9,8 +9,6 @@ import ElementPlus from 'element-plus'
 import 'element-plus/dist/index.css'
 import * as ElementPlusIconsVue from '@element-plus/icons-vue'
 
-import '../src/styles/global.scss' // 消除初始边距
-
 const app = createApp(App);
 const pinia = createPinia();
 pinia.use(piniaPersist);

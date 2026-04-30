@@ -22,4 +22,6 @@ public interface NoteService extends IService<Note> {
     Result getNoteById(Long id);
 
     Result updateNote(Note note);
+
+    Result listNewNote(Long userId);
 }

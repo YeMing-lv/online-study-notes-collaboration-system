@@ -1,6 +1,7 @@
 package com.osnc.main.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.osnc.main.common.Result;
 import com.osnc.main.pojo.dto.Star;
 
 import java.util.List;
@@ -17,4 +18,6 @@ public interface StarService extends IService<Star> {
 
     // 自定义方法示例：判断用户是否已给目标资源加星
     boolean isStarred(Long userId, Integer targetType, Long targetId);
+
+    Result listStarNote(Long userId);
 }

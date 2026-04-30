@@ -20,6 +20,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Slf4j
 @Service
@@ -148,10 +149,15 @@ public class FileServiceImpl extends ServiceImpl<FileMapper, File> implements Fi
                     LocalDateTime u1 = (LocalDateTime) o1.get("updateTime");
                     LocalDateTime u2 = (LocalDateTime) o2.get("updateTime");
                     compare = query.getOrderByUpdateDesc() ? u2.compareTo(u1) : u1.compareTo(u2);
+                } else {
+                    LocalDateTime u1 = (LocalDateTime) o1.get("updateTime");
+                    LocalDateTime u2 = (LocalDateTime) o2.get("updateTime");
+                    compare = true ? u2.compareTo(u1) : u1.compareTo(u2);
                 }
                 return compare;
             });
         }
+
 
         // ========== 4. 核心新增：基于PageParam的内存分页逻辑 ==========
         // 4.1 构建Page对象（利用你的PageParam.toPage()方法）

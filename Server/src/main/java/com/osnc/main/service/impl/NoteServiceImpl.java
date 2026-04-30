@@ -1,6 +1,7 @@
 package com.osnc.main.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.osnc.main.common.Result;
 import com.osnc.main.mapper.NoteMapper;
@@ -50,10 +51,33 @@ public class NoteServiceImpl extends ServiceImpl<NoteMapper, Note> implements No
 
     @Override
     public Result updateNote(Note note) {
-        int result = noteMapper.updateById(note);
-        if (result == 0) {
+        boolean result = noteMapper.insertOrUpdate(note);
+        if (!result) {
             return Result.failure(result);
         }
+        // 判断是否为插入
+        if (note.getCreateTime() == null) {
+            LambdaQueryWrapper<Note> wrapper = new LambdaQueryWrapper<>();
+            wrapper.eq(Note::getId, note.getId());
+            Note note1 = noteMapper.selectOne(wrapper);
+            if (note1 != null) {
+                return Result.success(note1);
+            }
+            return Result.failure("");
+        }
         return Result.success(result);
+    }
+
+    @Override
+    public Result listNewNote(Long userId) {
+        Page<Note> notePage = new Page<>(1, 10);
+        LambdaQueryWrapper<Note> lambdaQueryWrapper = new LambdaQueryWrapper<>();
+        lambdaQueryWrapper.eq(Note::getUserId, userId)
+                .orderByDesc(Note::getUpdateTime);
+        List noteList = noteMapper.selectList(notePage, lambdaQueryWrapper);
+        if (!noteList.isEmpty()) {
+            return Result.success(noteList);
+        }
+        return Result.failure("");
     }
 }

@@ -2,7 +2,7 @@
  * @Author: Yeming-lv 1602552896@qq.com
  * @Date: 2025-12-11 11:09:12
  * @LastEditors: Yeming-lv 1602552896@qq.com
- * @LastEditTime: 2026-03-20 15:27:16
+ * @LastEditTime: 2026-04-30 17:13:01
  * @FilePath: \webapp\src\layout\sideBar.vue
  * @Description: 侧边文件夹导航栏，包含了个人用户管理、新建文件、文件夹导航
  * 
@@ -10,8 +10,13 @@
 -->
 <template>
     <el-menu ref="sideBarRef" :collapse="isCollapse" @select="handleMenuSelection">
-        <user-avatar v-if="!isCollapse"></user-avatar>
+        <user-avatar v-if="!isCollapse" @create="handleCreate"></user-avatar>
         <div class="side-bar-content">
+            <el-menu-item index="userCenter"><el-icon>
+                    <Avatar />
+                </el-icon>
+                <template #title>个人中心</template>
+            </el-menu-item>
             <el-menu-item index="newFile"><el-icon>
                     <Menu />
                 </el-icon>
@@ -59,9 +64,9 @@
             <el-menu-item index="crycle"><el-icon>
                     <Delete />
                 </el-icon><template #title>回收站</template></el-menu-item>
-            <el-menu-item index="group"><el-icon>
+            <!-- <el-menu-item index="group"><el-icon>
                     <Cloudy />
-                </el-icon><template #title>云协作</template></el-menu-item>
+                </el-icon><template #title>云协作</template></el-menu-item> -->
         </div>
         <!-- TODO 侧边栏折叠 -->
         <!-- <el-divider style="margin: 0;padding: 0;"></el-divider> -->
@@ -100,9 +105,14 @@
 import { ElMessage, ElMessageBox, ClickOutside as vClickOutside } from 'element-plus';
 import userAvatar from './components/userAvatar.vue';
 import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue';
+import { useRouter } from 'vue-router';
 import { useFolderStore } from '../store/folder';
+import { useUserStore } from '../store/user';
+import { useCurrEditStore } from '../store/currentEdit';
+import { updateNote } from '@/api/apis/note';
 
 // ==================================data===================================
+const router = useRouter();
 // 是否折叠
 const isCollapse = ref(false);
 // 文件夹数组
@@ -140,6 +150,10 @@ const handleFolder = ref(folderStore.currentFolder);
 // 记录树的展开状态
 const defaultExpandedKeys = computed(() => folderStore.defaultExpandedKeys);
 
+const userStore = useUserStore();
+
+const currEditStore = useCurrEditStore();
+
 // ==================================钩子函数========================================
 onMounted(() => {
     if (Object.keys(currentFolder.value).length != 0) {
@@ -165,6 +179,17 @@ watch(currentFolder, (newValue) => {
 // =================================== methods ======================================
 // TODO 选择导航栏 文件夹
 const handleMenuSelection = (key, keyPath) => {
+    switch (key) {
+        case 'userCenter':
+            router.push({ name: 'User' });
+            break;
+        case 'newFile':
+            
+            break;
+        default:
+            router.push({ name: 'Note' });
+            break;
+    }
     folderStore.setCurrentFolder({
         id: 0,
         name: key
@@ -322,6 +347,25 @@ const focusNameInput = (id) => {
 const handleHideMorePop = () => {
     hideMorePopover.more = false;
     hideMorePopover.create = false;
+}
+
+// 新建文件
+const handleCreate = async (type) => {
+    switch (type) {
+        case "folder":
+            createFile();
+            break;
+        case "note":
+            const result = await updateNote({
+                userId: userStore.user.id,
+                folderId: currentFolder.value.id
+            });
+            console.log(result);
+            if (result.code === 200) {
+                // 刷新文件夹列表
+                folderStore.isRefreshFolder = true;
+            }
+    }
 }
 
 </script>

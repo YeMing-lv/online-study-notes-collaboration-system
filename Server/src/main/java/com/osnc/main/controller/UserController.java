@@ -2,10 +2,14 @@ package com.osnc.main.controller;
 
 import com.osnc.main.common.Result;
 import com.osnc.main.pojo.dto.User;
+import com.osnc.main.pojo.dto.UserDailyDuration;
+import com.osnc.main.service.impl.UserDailyDurationImpl;
 import com.osnc.main.service.impl.UserServiceImpl;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 /**
  * 系统用户控制器
@@ -19,6 +23,9 @@ public class UserController {
 
     @Autowired
     private UserServiceImpl userService;
+
+    @Autowired
+    private UserDailyDurationImpl userDailyDurationService;
 
     /**
      * 注册方法
@@ -42,5 +49,21 @@ public class UserController {
     public Result updateUser(@RequestBody User user) {
         log.info(user+"");
         return userService.updateUserById(user);
+    }
+
+    /**
+     * 上报使用时长（秒）
+     */
+    @PostMapping("/report")
+    public Result reportDuration(@RequestParam Long userId,@RequestParam Integer seconds) {
+        return userDailyDurationService.reportDuration(userId, seconds);
+    }
+
+    /**
+     * 查询近一年使用时长（日历热图用）
+     */
+    @GetMapping("/year")
+    public Result yearDuration(@RequestParam Long userId) {
+        return userDailyDurationService.getYearDuration(userId);
     }
 }

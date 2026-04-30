@@ -2,7 +2,7 @@
  * @Author: Yeming-lv 1602552896@qq.com
  * @Date: 2026-03-11 14:36:43
  * @LastEditors: Yeming-lv 1602552896@qq.com
- * @LastEditTime: 2026-03-19 17:13:33
+ * @LastEditTime: 2026-04-30 16:05:21
  * @FilePath: \webapp\src\layout\editor.vue
  * @Description: 
  * 
@@ -11,10 +11,10 @@
 <template>
     <el-container v-loading="refresh" class="editor-container">
         <el-empty v-if="Object.keys(currentEdit).length == 0" style="width: 100%;" description="快创建笔记吧"
-            image="../src/assets/note.png" image-size="120"></el-empty>
+            image="../src/assets/note.png" :image-size="120"></el-empty>
         <div class="ed-container" v-else-if="!refresh">
             <el-header class="title-header">
-                <input id="th-input" class="th-input" type="text" v-model="title" autocomplete="off">
+                <input id="th-input" class="th-input" type="text" v-model="title" autocomplete="off" placeholder="请输入标题">
                 <!-- <span class="th-title">{{ title }}</span> -->
                 <el-row class="th-right-container" :gutter="20">
                     <el-col :span="8">
@@ -50,25 +50,31 @@ import '@wangeditor/editor/dist/css/style.css';
 import { Editor, Toolbar } from '@wangeditor/editor-for-vue';
 import { onBeforeUnmount, ref, reactive, shallowRef, onMounted, watch, computed } from 'vue';
 
-import { extractImagePath } from '../utils/imageUtils';
-import { useUserStore } from '../store/user';
-import { deleteImage } from '../api/apis/image';
-import { useCurrEditStore } from '../store/currentEdit';
+import { extractImagePath } from '@/utils/imageUtils';
+import { useUserStore } from '@/store/user';
+import { deleteImage } from '@/api/apis/image';
+import { useCurrEditStore } from '@/store/currentEdit';
 import { ElMessage, ElScrollbar } from 'element-plus';
-import { updateNote, saveNoteVersion } from '../api/apis/note';
+import { updateNote, saveNoteVersion } from '@/api/apis/note';
 
 const userStore = useUserStore();
 const currentEditStore = useCurrEditStore();
 const currentEdit = computed(() => currentEditStore.currentEdit);
 
 const editorRef = shallowRef(); // 编辑器实例，必须用 shallowRef，重要!
-const title = ref(JSON.stringify(currentEdit.value.title) || '');
-const valueHtml = ref(JSON.stringify(currentEdit.value.content) || ''); // 内容 HTML
+const title = ref('');
+const valueHtml = ref(''); // 内容 HTML
 const imageList1 = reactive([]); // 图片列表 所有插入的图片 包括编辑器里删除的图片
 
 const refresh = ref(false); // 刷新编辑器
 
 //============================生命周期钩子=======================
+onMounted(() => {
+    if (currentEdit.value != null && currentEdit.value.title != null) {
+        title.value = JSON.parse(JSON.stringify(currentEdit.value.title));
+        valueHtml.value = JSON.parse(JSON.stringify(currentEdit.value.content));
+    }
+})
 // 退出页面 确认是否保存草稿
 // 组件销毁前，要及时销毁编辑器，重要！
 onBeforeUnmount(() => {
@@ -81,15 +87,7 @@ onBeforeUnmount(() => {
 //===============================侦听器=============================
 // 读取选中笔记内容
 watch(currentEdit, (newValue, oldV) => {
-    // console.log(newValue);
-    // console.log(oldV);
-
-    // if (Object.keys(oldV).length != 0) {
-    //     saveNote()
-    // }
-    
-
-    if (newValue.id !== oldV.id) {
+    if (newValue.id !== oldV.id && JSON.stringify(newValue) !== {}) {
         // saveNote();
         refresh.value = true;
         setTimeout(() => {

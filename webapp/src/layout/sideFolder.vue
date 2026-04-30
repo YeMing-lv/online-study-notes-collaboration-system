@@ -2,7 +2,7 @@
  * @Author: Yeming-lv 1602552896@qq.com
  * @Date: 2025-12-11 11:17:14
  * @LastEditors: Yeming-lv 1602552896@qq.com
- * @LastEditTime: 2026-03-20 16:40:04
+ * @LastEditTime: 2026-04-30 17:02:10
  * @FilePath: \webapp\src\layout\sideFolder.vue
  * @Description: 侧边的文件夹导航栏，能进行条件搜索、文件夹导航、显示文件夹内的文件
  * 
@@ -63,7 +63,7 @@
             <div class="file" v-else v-for="file in fileList" :key="file.id" @click="handleFileClick(file)">
                 <div class="file-title">
                     <img :src="file.type === 1 ? getImgUrl('folder.png') : getImgUrl('markdown.png')" alt="">
-                    <span class="title">{{ file.name || file.title }}</span>
+                    <span class="title">{{ file.name || file.title || '未命名' }}</span>
                     <popover placement="right">
                         <el-icon class="more">
                             <MoreFilled />
@@ -71,7 +71,7 @@
                         <template #content>
                             <ul>
                                 <li @click="renameFile(file.title || file.name)">重命名</li>
-                                <li>删除</li>
+                                <li @click="deleteFile(file)">删除</li>
                             </ul>
                         </template>
                     </popover>
@@ -79,7 +79,7 @@
                 <div class="file-content" v-if="file.content">
                     {{ file.content }}
                 </div>
-                <div class="file-other">{{ formatTime(file.createTime, 'YYYY-MM-DD') }}</div>
+                <div class="file-other">{{ formatTime(file.updateTime, 'YYYY-MM-DD') }}</div>
             </div>
         </div>
         <el-divider direction="horizontal" content-position="center">总共{{ pageParam.total }}项</el-divider>
@@ -87,17 +87,17 @@
 </template>
 <script setup>
 import { ref, reactive, computed, onMounted, watch } from 'vue';
-import { ElMessage, ClickOutside as VClickOutside } from 'element-plus';
-import { useFolderStore } from '../store/folder';
-import { useUserStore } from '../store/user.js';
+import { ElMessage, ElMessageBox, ClickOutside as VClickOutside } from 'element-plus';
+import { useFolderStore } from '@/store/folder';
+import { useUserStore } from '@/store/user.js';
 import { useCurrEditStore } from '@/store/currentEdit';
 import { listFileByFolderId } from '@/api/apis/file.js';
 import { getFolderByID } from '@/api/apis/folder.js';
 import { formatTime } from '@/utils/timeHandle.js';
-import { getImgUrl } from '../utils/assetsImport.js';
-import popover from '../components/popover.vue';
+import { getImgUrl } from '@/utils/assetsImport.js';
+import popover from '@/components/popover.vue';
 import { Search } from '@element-plus/icons-vue';
-import { getNoteById } from '../api/apis/note';
+import { getNoteById, deleteNote } from '@/api/apis/note';
 
 //=======================================data===================================
 // 搜索栏
@@ -125,6 +125,7 @@ const orderByDESC = ref(true);
 // 当前文件夹
 const folderStore = useFolderStore();
 const currentFolder = computed(() => folderStore.currentFolder);
+const isRefreshFolder = computed(() => folderStore.isRefreshFolder);
 // 用户
 const userStore = useUserStore();
 // 编辑文件
@@ -154,6 +155,13 @@ watch(currentFolder, (newV, oldV) => {
         searchFile();
     }
     // console.log(currentFolder.value)
+})
+
+watch(isRefreshFolder, (newV) => {
+    if (isRefreshFolder) {
+        searchFile();
+        folderStore.isRefreshFolder = false;
+    }
 })
 
 //========================================methods======================================
@@ -206,8 +214,22 @@ const renameFile = (name) => {
 
 // TODO 文件列表的删除
 // 删除
-const deleteFile = (id) => {
+const deleteFile = async (file) => {
+    switch (file.type) {
+        case 1:
 
+            break;
+        case 2:
+            ElMessageBox.confirm('确认要删除该笔记吗？', '删除笔记')
+                .then(async () => {
+                    const result = await deleteNote(file.id);
+                    if (result.code === 200) {
+                        searchFile();
+                        currentEditStore.currentEdit = {};
+                    }
+                }).catch((err) => console.error('Failed to delete Note: ' + err))
+            break;
+    }
 }
 
 // TODO 文件列表的移动
@@ -246,6 +268,11 @@ const backToParentFolder = async () => {
         } else {
             console.error("getFolderById Faile: " + result.message);
         }
+    } else {
+        folderStore.setCurrentFolder({
+            id: 0,
+            name: ''
+        })
     }
 }
 

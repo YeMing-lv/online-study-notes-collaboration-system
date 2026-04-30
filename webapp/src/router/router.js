@@ -2,7 +2,7 @@
  * @Author: Yeming-lv 1602552896@qq.com
  * @Date: 2025-12-10 17:20:46
  * @LastEditors: Yeming-lv 1602552896@qq.com
- * @LastEditTime: 2026-03-19 15:58:55
+ * @LastEditTime: 2026-04-14 17:12:08
  * @FilePath: \webapp\src\router\router.js
  * @Description: 
  * 
@@ -28,7 +28,20 @@ const routes = [
         path: '/file',
         name: 'File',
         component: () => import('@/views/File/file.vue'),
-        meta: { title: '首页' }
+        meta: { title: '首页' },
+        children: [
+            {
+                path: 'user',
+                name: 'User',
+                component: () => import('@/views/File/userCenter/userCenter.vue'),
+                meta: { title: '用户中心' }
+            },
+            {
+                path: 'note',
+                name: 'Note',
+                component: () => import('@/views/File/noteEdit/noteEdit.vue')
+            }
+        ]
     },
 
     {

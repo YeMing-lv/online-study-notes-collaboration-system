@@ -2,7 +2,7 @@
  * @Author: Yeming-lv 1602552896@qq.com
  * @Date: 2025-12-11 08:43:14
  * @LastEditors: Yeming-lv 1602552896@qq.com
- * @LastEditTime: 2026-03-19 16:00:01
+ * @LastEditTime: 2026-04-30 08:37:26
  * @FilePath: \webapp\src\views\File\file.vue
  * @Description: 主要页面，包含了侧边文件夹导航栏、侧边文件夹内容导航栏、文件编辑器
  * 
@@ -12,19 +12,16 @@
     <div class="file-container">
         <side-bar :my-folders="folders" @create-file="handleCreateFile" @rename-file="handleRenameFile"
             @delete-file="handleDeleteFile"></side-bar>
-        <side-folder></side-folder>
-        <editor></editor>
+        <router-view></router-view>
     </div>
 </template>
 <script setup>
 import sideBar from '@/layout/sideBar.vue';
-import sideFolder from '@/layout/sideFolder.vue';
-import editor from '../../layout/editor.vue';
-import { listFolderByUserId } from '../../api/apis/folder';
+import { listFolderByUserId } from '@/api/apis/folder';
 import { onMounted, onUnmounted, reactive } from 'vue';
-import { useUserStore } from '../../store/user';
+import { useUserStore } from '@/store/user';
 import { ElMessage } from 'element-plus';
-import { updateFolder, createFolder, deleteFolder } from '../../api/apis/folder';
+import { updateFolder, createFolder, deleteFolder } from '@/api/apis/folder';
 import { Client } from '@stomp/stompjs';
 // import SockJS from 'sockjs-client/dist/sockjs.min.js';
 
@@ -40,10 +37,16 @@ onMounted(() => {
 
     // 连接到端点
     connectToEndpoint('/ws-native', '/ws/message1', '/topic/messages1');
+
+    setScale();
+    window.addEventListener('resize', () => {
+        setScale()
+    })
 })
 
 onUnmounted(() => {
     disconnectWebSocket();
+    window.removeEventListener('resize', setScale)
 })
 
 //====================================methods========================================
@@ -117,7 +120,7 @@ function connectToEndpoint(endpoint, messagePath, subscriptionPath) {
             Authorization: userStore.token
         },
         onConnect: (message) => {
-            console.log("Stomp Connect: " + message);
+            // console.log("Stomp Connect: " + message);
             // 订阅消息（接收后端推送/回复）
             stompClient.subscribe('/topic/messages1', (message) => {
                 console.log('收到后端消息:', message.body);
@@ -125,7 +128,7 @@ function connectToEndpoint(endpoint, messagePath, subscriptionPath) {
             });
         },
         onChangeState: (message) => {
-            console.log("Stomp ChangeState: " + message);
+            // console.log("Stomp ChangeState: " + message);
         },
 
     });
@@ -150,12 +153,26 @@ const sendMessage = (message) => {
     });
 }
 
+// 固定缩放核心方法
+const setScale = () => {
+    const designWidth = 1528 // 设计稿基准宽度
+    const designHeight = 732
+    const scaleWrap = document.querySelector('.file-container')
+    if (!scaleWrap) return
+    // 计算缩放比例
+    const scaleX = document.documentElement.clientWidth / designWidth
+    const scaleY = document.documentElement.clientHeight / designHeight
+    const scale = scaleX > scaleY ? scaleY : scaleX;
+    scaleWrap.style.transform = `scale(${scale})`
+    scaleWrap.style.transformOrigin = 'left top'
+}
 </script>
 
 <style lang="scss" scoped>
 .file-container {
     display: flex;
     overflow: hidden;
-    height: 100vh;
+    width: 1528px;
+    height: 732px;
 }
 </style>
