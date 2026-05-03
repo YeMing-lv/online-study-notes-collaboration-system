@@ -2,7 +2,7 @@
  * @Author: Yeming-lv 1602552896@qq.com
  * @Date: 2025-12-11 08:43:14
  * @LastEditors: Yeming-lv 1602552896@qq.com
- * @LastEditTime: 2026-04-30 08:37:26
+ * @LastEditTime: 2026-05-03 14:56:43
  * @FilePath: \webapp\src\views\File\file.vue
  * @Description: 主要页面，包含了侧边文件夹导航栏、侧边文件夹内容导航栏、文件编辑器
  * 
@@ -38,15 +38,15 @@ onMounted(() => {
     // 连接到端点
     connectToEndpoint('/ws-native', '/ws/message1', '/topic/messages1');
 
-    setScale();
-    window.addEventListener('resize', () => {
-        setScale()
-    })
+    // setScale();
+    // window.addEventListener('resize', () => {
+    //     setScale()
+    // })
 })
 
 onUnmounted(() => {
     disconnectWebSocket();
-    window.removeEventListener('resize', setScale)
+    // window.removeEventListener('resize', setScale)
 })
 
 //====================================methods========================================
@@ -155,14 +155,15 @@ const sendMessage = (message) => {
 
 // 固定缩放核心方法
 const setScale = () => {
-    const designWidth = 1528 // 设计稿基准宽度
-    const designHeight = 732
+    const designWidth = 1920 // 设计稿基准宽度
+    const designHeight = 1000
     const scaleWrap = document.querySelector('.file-container')
     if (!scaleWrap) return
     // 计算缩放比例
     const scaleX = document.documentElement.clientWidth / designWidth
-    const scaleY = document.documentElement.clientHeight / designHeight
-    const scale = scaleX > scaleY ? scaleY : scaleX;
+    // const scaleY = document.documentElement.clientHeight / designHeight
+    // const scale = scaleX > scaleY ? scaleY : scaleX;
+    const scale = scaleX;
     scaleWrap.style.transform = `scale(${scale})`
     scaleWrap.style.transformOrigin = 'left top'
 }
@@ -172,7 +173,7 @@ const setScale = () => {
 .file-container {
     display: flex;
     overflow: hidden;
-    width: 1528px;
-    height: 732px;
+    width: 100%;
+    height: 100vh;
 }
 </style>

@@ -2,7 +2,7 @@
  * @Author: Yeming-lv 1602552896@qq.com
  * @Date: 2026-03-11 14:36:43
  * @LastEditors: Yeming-lv 1602552896@qq.com
- * @LastEditTime: 2026-04-30 15:05:31
+ * @LastEditTime: 2026-05-03 13:37:30
  * @FilePath: \webapp\src\layout\components\userAvatar.vue
  * @Description: 
  * 
@@ -58,7 +58,7 @@
                 <el-badge is-dot>公告</el-badge>
             </el-col>
         </el-row> -->
-        <el-popover popper-class="pop-create-file" :visible="displayCreatePop" placement="bottom-end" width="320"
+        <el-popover popper-class="pop-create-file" :visible="displayCreatePop" placement="bottom-end" width="160"
             :show-arrow="false">
             <template #reference>
                 <el-button style="margin-top: 5px;width: 130px;" type="primary" @click="displayCreatePop = true">
@@ -71,20 +71,20 @@
             <div class="content" v-click-outside="() => displayCreatePop = false">
                 <span style="font-size: large;font-weight: 700;">新建文件</span>
                 <el-row :gutter="15">
-                    <el-col :span="6">
+                    <el-col :span="12">
                         <div @click.stop="handleCreate('note')" class="create-option">
                             <el-image style="width: 40px; pointer-events: none" :src="markDownImgUrl" />
                             <span>笔记</span>
                         </div>
                     </el-col>
-                    <el-col :span="6">
+                    <el-col :span="12">
                         <div @click.stop="handleCreate('folder')" class="create-option">
                             <el-image style="width: 40px; pointer-events: none" :src="folderImgUrl" />
                             <span>文件夹</span>
                         </div>
                     </el-col>
-                    <el-col :span="6">3</el-col>
-                    <el-col :span="6">4</el-col>
+                    <!-- <el-col :span="6">3</el-col>
+                    <el-col :span="6">4</el-col> -->
                 </el-row>
             </div>
         </el-popover>
@@ -196,8 +196,6 @@ const handleCreate = (type) => {
                 align-items: center;
                 justify-content: center;
                 cursor: pointer;
-
-
             }
 
             .el-col:hover {

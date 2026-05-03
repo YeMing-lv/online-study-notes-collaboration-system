@@ -1,8 +1,18 @@
 <!--
  * @Author: Yeming-lv 1602552896@qq.com
+ * @Date: 2026-03-11 14:36:43
+ * @LastEditors: Yeming-lv 1602552896@qq.com
+ * @LastEditTime: 2026-05-03 17:52:58
+ * @FilePath: \webapp\src\layout\sideFolder.vue
+ * @Description: 
+ * 
+ * Copyright (c) 2026 by ${git_name_email}, All Rights Reserved. 
+-->
+<!--
+ * @Author: Yeming-lv 1602552896@qq.com
  * @Date: 2025-12-11 11:17:14
  * @LastEditors: Yeming-lv 1602552896@qq.com
- * @LastEditTime: 2026-04-30 17:02:10
+ * @LastEditTime: 2026-05-03 15:32:10
  * @FilePath: \webapp\src\layout\sideFolder.vue
  * @Description: 侧边的文件夹导航栏，能进行条件搜索、文件夹导航、显示文件夹内的文件
  * 
@@ -64,29 +74,43 @@
                 <div class="file-title">
                     <img :src="file.type === 1 ? getImgUrl('folder.png') : getImgUrl('markdown.png')" alt="">
                     <span class="title">{{ file.name || file.title || '未命名' }}</span>
+                    <!-- <el-icon style="margin-right: 10px;">
+                        <StarFilled />
+                    </el-icon> -->
                     <popover placement="right">
                         <el-icon class="more">
                             <MoreFilled />
                         </el-icon>
                         <template #content>
                             <ul>
+                                <li style="border-bottom: 1px solid #9f9f9f;">打开所在文件夹</li>
                                 <li @click="renameFile(file.title || file.name)">重命名</li>
-                                <li @click="deleteFile(file)">删除</li>
+                                <li @click="showHistoryVersion(file.id)">历史版本</li>
+                                <li>移动到</li>
+                                <li @click="deleteFile(file)" style="border-bottom: 1px solid #9f9f9f;">删除</li>
+                                <li @click="shareNoteDisplay = true">分享</li>
+                                <li>加星</li>
                             </ul>
                         </template>
                     </popover>
                 </div>
                 <div class="file-content" v-if="file.content">
-                    {{ file.content }}
+                    {{ file.content.replace(/<[^>]+>/g, '') }}
                 </div>
-                <div class="file-other">{{ formatTime(file.updateTime, 'YYYY-MM-DD') }}</div>
+                <div class="file-other">
+                    <span>{{ formatTime(file.updateTime, 'YYYY-MM-DD') }}</span>
+                    <span>只读</span>
+                </div>
             </div>
         </div>
         <el-divider direction="horizontal" content-position="center">总共{{ pageParam.total }}项</el-divider>
+        <note-history v-model:display="noteVersionDisplay" :version-list="versionList"></note-history>
+        <share-note v-model:display="shareNoteDisplay" :noteId="currentEdit.id"
+            :userId="userStore.user.id"></share-note>
     </div>
 </template>
 <script setup>
-import { ref, reactive, computed, onMounted, watch } from 'vue';
+import { ref, reactive, computed, onMounted, watch, version } from 'vue';
 import { ElMessage, ElMessageBox, ClickOutside as VClickOutside } from 'element-plus';
 import { useFolderStore } from '@/store/folder';
 import { useUserStore } from '@/store/user.js';
@@ -96,10 +120,14 @@ import { getFolderByID } from '@/api/apis/folder.js';
 import { formatTime } from '@/utils/timeHandle.js';
 import { getImgUrl } from '@/utils/assetsImport.js';
 import popover from '@/components/popover.vue';
-import { Search } from '@element-plus/icons-vue';
-import { getNoteById, deleteNote } from '@/api/apis/note';
+import { Search, StarFilled } from '@element-plus/icons-vue';
+import { getNoteById, deleteNote, listNote, getNoteVersionList } from '@/api/apis/note';
+import { useRoute } from 'vue-router';
+import noteHistory from './components/noteHistory.vue';
+import shareNote from './components/shareNote.vue';
 
 //=======================================data===================================
+const route = useRoute();
 // 搜索栏
 const searchInput = ref();
 // 当前排序条件
@@ -141,17 +169,87 @@ const pageParam = ref({
 // 文件列表
 const fileList = ref([]);
 
+// 回收站的数据
+const recycleFolder = {
+    createTime: "2025-12-30T15:53:22",
+    deleteTime: null,
+    id: 30045,
+    isDeleted: 0,
+    isRecycle: 0,
+    name: "学习资料11",
+    parentId: 0,
+    type: 1,
+    recycleExpireTime: null,
+    sort: 0,
+    updateTime: "2026-05-03T13:53:28",
+    userId: 10003,
+}
+
+const noteVersionDisplay = ref(false);
+const versionList = ref([]);
+
+const shareNoteDisplay = ref(false);
+
+// 分享的笔记数据
+const testNoteData = {
+    type: 2,
+    categoryId
+        :
+        null,
+    content
+        :
+        "<p>12313</p>",
+    coverUrl
+        :
+        null,
+    createTime
+        :
+        "2026-04-30T17:12:02",
+    deleteTime
+        :
+        null,
+    folderId
+        :
+        30045,
+    id
+        :
+        20017,
+    isDeleted
+        :
+        0,
+    isPublic
+        :
+        0,
+    isRecycle
+        :
+        0,
+    readCount
+        :
+        0,
+    recycleExpireTime
+        :
+        null,
+    title
+        :
+        "123",
+    updateTime
+        :
+        "2026-05-02T07:13:07",
+    userId
+        :
+        10003,
+    permission: '1'
+}
 
 //========================================钩子函数========================================
-onMounted(() => {
-    if (Object.keys(currentFolder.value).length != 0) {
-        searchFile();
-    }
+onMounted(async () => {
+    const listType = route.params.type;
+    handleNoteType(listType);
 })
 
 //======================================侦听器============================================
 watch(currentFolder, (newV, oldV) => {
-    if (currentFolder.value) {
+    if (currentFolder.value && route.params.type === 'folder') {
         searchFile();
     }
     // console.log(currentFolder.value)
@@ -164,7 +262,58 @@ watch(isRefreshFolder, (newV) => {
     }
 })
 
+// 判断需要什么类型的
+watch(() => route.params.type, async (newV, oldV) => {
+    handleNoteType(newV);
+})
+
 //========================================methods======================================
+
+const handleNoteType = async (type) => {
+    switch (type) {
+        case 'new':
+            const newListQuery = {
+                userId: userStore.user.id,
+                type: 'new',
+                keyword: '',
+                ...pageParam.value
+            }
+            const result = await listNote(newListQuery);
+            if (result.code === 200) {
+                fileList.value = result.data.slice(0, 6);
+                pageParam.value.total = 6;
+            }
+            break;
+        case 'folder':
+            if (Object.keys(currentFolder.value).length != 0) {
+                searchFile();
+            }
+            break;
+        case 'star':
+            const newListQuery1 = {
+                userId: userStore.user.id,
+                type: 'new',
+                keyword: '',
+                ...pageParam.value
+            }
+            const result1 = await listNote(newListQuery1);
+            if (result1.code === 200) {
+                fileList.value = result1.data.slice(0, 4);
+                pageParam.value.total = 4;
+            }
+            break;
+        case 'recycle':
+            fileList.value = [];
+            fileList.value.push(recycleFolder);
+            pageParam.value.total = 1;
+            break;
+        case 'share':
+            fileList.value = [];
+            fileList.value.push(testNoteData);
+            pageParam.value.total = 1;
+            break;
+    }
+}
 
 /**
  * @description: 搜索文件列表
@@ -240,6 +389,15 @@ const moveFile = (id) => {
 
 // 处理文件的点击
 const handleFileClick = async (data) => {
+    if (route.params.type === 'new') {
+        const result = await getNoteById(data.id);
+        if (result?.code === 200) {
+            currentEditStore.setCurrentEdit(result.data);
+        } else {
+            console.error("GetNoteByID Failed: " + result.message);
+            ElMessage.warning("查询笔记失败！");
+        }
+    }
     if (!data.type || !data.id) return;
     switch (data.type) {
         // 文件夹
@@ -275,6 +433,15 @@ const backToParentFolder = async () => {
         })
     }
 }
+
+const showHistoryVersion = async (noteId) => {
+    const result = await getNoteVersionList(noteId);
+    if (result.code === 200) {
+        versionList.value = result.data;
+        noteVersionDisplay.value = true;
+    }
+}
+
 
 </script>
 

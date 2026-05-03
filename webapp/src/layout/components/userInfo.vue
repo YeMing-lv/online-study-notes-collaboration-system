@@ -39,7 +39,9 @@
             </el-form-item>
         </el-form>
         <template #footer>
-            <el-button @click="submitUser(userForm)">提交</el-button>
+            <!-- TODO 重置密码 -->
+            <el-button type="danger">重置密码</el-button>
+            <el-button @click="submitUser(userForm)" type="primary">提交</el-button>
             <el-button @click="displayInfo = false">取消</el-button>
         </template>
     </el-dialog>

@@ -45,4 +45,10 @@ public class Star {
 
     @TableField("update_time")
     private LocalDateTime updateTime;
+
+    public Star(Integer targetType, Long userId, Long noteId) {
+        this.targetType = targetType;
+        this.userId = userId;
+        this.targetId = noteId;
+    }
 }

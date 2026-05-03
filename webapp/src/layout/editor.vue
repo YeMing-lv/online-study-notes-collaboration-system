@@ -2,7 +2,7 @@
  * @Author: Yeming-lv 1602552896@qq.com
  * @Date: 2026-03-11 14:36:43
  * @LastEditors: Yeming-lv 1602552896@qq.com
- * @LastEditTime: 2026-04-30 16:05:21
+ * @LastEditTime: 2026-05-03 17:57:06
  * @FilePath: \webapp\src\layout\editor.vue
  * @Description: 
  * 
@@ -14,33 +14,39 @@
             image="../src/assets/note.png" :image-size="120"></el-empty>
         <div class="ed-container" v-else-if="!refresh">
             <el-header class="title-header">
-                <input id="th-input" class="th-input" type="text" v-model="title" autocomplete="off" placeholder="请输入标题">
+                <input id="th-input" class="th-input" type="text" v-model="title" autocomplete="off"
+                    placeholder="请输入标题">
                 <!-- <span class="th-title">{{ title }}</span> -->
-                <el-row class="th-right-container" :gutter="20">
+                <!-- <el-row class="th-right-container" :gutter="20">
                     <el-col :span="8">
                         <el-button type="primary" size="default" @click="saveNote('active')">保存</el-button>
                     </el-col>
                     <el-col :span="12">
                         <el-row :gutter="10">
-                            <el-col :span="12">
+                            <el-col :span="8" @click="handleStar()">
                                 <el-icon>
                                     <Star />
                                 </el-icon>
                             </el-col>
-                            <el-col :span="12">
+                            <el-col :span="8">
                                 <el-icon>
                                     <Share />
                                 </el-icon>
                             </el-col>
+                            <el-col :span="8">
+                                <el-icon>
+                                    <MoreFilled />
+                                </el-icon>
+                            </el-col>
                         </el-row>
                     </el-col>
-                </el-row>
+                </el-row> -->
             </el-header>
             <el-divider style="margin: 0;" />
-            <Toolbar class="toolbar-header" :editor="editorRef" :default-config="toolbarConfig" />
-            <el-divider style="margin: 0;" />
+            <!-- <Toolbar class="toolbar-header" :editor="editorRef" :default-config="toolbarConfig" />
+            <el-divider style="margin: 0;" /> -->
             <Editor class="content-main" :default-config="editorConfig" v-model="valueHtml" @onCreated="handleCreated"
-                    @onChange="handleChange" @onDestroyed="handleDestroyed()" />
+                @onChange="handleChange" @onDestroyed="handleDestroyed()" />
         </div>
     </el-container>
 </template>
@@ -55,7 +61,7 @@ import { useUserStore } from '@/store/user';
 import { deleteImage } from '@/api/apis/image';
 import { useCurrEditStore } from '@/store/currentEdit';
 import { ElMessage, ElScrollbar } from 'element-plus';
-import { updateNote, saveNoteVersion } from '@/api/apis/note';
+import { updateNote, saveNoteVersion, starNote } from '@/api/apis/note';
 
 const userStore = useUserStore();
 const currentEditStore = useCurrEditStore();
@@ -94,7 +100,7 @@ watch(currentEdit, (newValue, oldV) => {
             refresh.value = false;
         }, 1000)
     }
-    
+
     if (Object.keys(currentEdit.value).length != 0) {
         valueHtml.value = currentEdit.value.content;
         title.value = currentEdit.value.title;
@@ -102,7 +108,7 @@ watch(currentEdit, (newValue, oldV) => {
 })
 
 // 监听Ctrl+S快捷键，保存笔记
-document.addEventListener("keydown", (event) => {    
+document.addEventListener("keydown", (event) => {
     if (event.ctrlKey && event.code == 'KeyS') {
         saveNote('active');
         // 禁止触发浏览器保存页面事件
@@ -189,13 +195,13 @@ const saveNote = async (type, note) => {
             updateTime: new Date()
         };
         console.log(newNote);
-        // const result = await updateNote(newNote);
-        // if (result.code == 200) {
-        //     if (type == 'active') {
-        //         ElMessage.success("保存成功！");
-        //     }
-        //     currentEditStore.setCurrentEdit(newNote);
-        // }
+        const result = await updateNote(newNote);
+        if (result.code == 200) {
+            if (type == 'active') {
+                ElMessage.success("保存成功！");
+            }
+            currentEditStore.setCurrentEdit(newNote);
+        }
     }
 }
 
@@ -247,6 +253,10 @@ function compareImageList(list1, list2) {
     ];
 
     return list;
+}
+
+const handleStar = async () => {
+
 }
 </script>
 

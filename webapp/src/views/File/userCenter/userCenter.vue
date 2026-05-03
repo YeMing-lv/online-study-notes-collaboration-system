@@ -2,7 +2,7 @@
  * @Author: Yeming-lv 1602552896@qq.com
  * @Date: 2026-04-14 14:06:56
  * @LastEditors: Yeming-lv 1602552896@qq.com
- * @LastEditTime: 2026-04-30 10:33:39
+ * @LastEditTime: 2026-05-02 14:57:15
  * @FilePath: \webapp\src\views\File\userCenter\userCenter.vue
  * @Description: 
  * 
@@ -41,14 +41,14 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, shallowRef } from 'vue'
 import * as echarts from 'echarts'
 
 // 图表实例引用
 const calendarChart = ref(null)
-let calChart = null;
+const calChart = shallowRef();
 const lineChart = ref(null);
-let liChart = null;
+const liChart = shallowRef();
 
 // 模拟数据：日期 + 数值
 const getVirtualData = () => {
@@ -86,7 +86,7 @@ const initChart = () => {
     if (!lineChart.value) return
 
     // 初始化实例
-    calChart = echarts.init(calendarChart.value)
+    calChart.value = echarts.init(calendarChart.value)
 
     const calOption = {
         title: {
@@ -129,9 +129,9 @@ const initChart = () => {
         }
     }
 
-    calChart.setOption(calOption)
+    calChart.value.setOption(calOption)
 
-    liChart = echarts.init(lineChart.value)
+    liChart.value = echarts.init(lineChart.value)
     const { xAxisData, seriesData } = getHourData()
     const lineOption = {
         title: {
@@ -171,12 +171,12 @@ const initChart = () => {
         ]
     };
 
-    liChart.setOption(lineOption)
+    liChart.value.setOption(lineOption)
 }
 
 const resizeChart = () => {
-    calChart?.resize();
-    liChart?.resize();
+    calChart.value.resize();
+    liChart.value.resize();
 }
 
 // 挂载时初始化
@@ -188,8 +188,8 @@ onMounted(() => {
 // 销毁时清理
 onUnmounted(() => {
     window.removeEventListener('resize', resizeChart())
-    calChart?.dispose()
-    liChart?.dispose()
+    calChart.value.dispose()
+    liChart.value.dispose()
 })
 </script>
 

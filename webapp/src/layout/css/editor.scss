@@ -1,8 +1,10 @@
 .editor-container {
+    display: flex;
     position: relative;
     overflow: hidden;
 
     .title-header {
+        width: 100%;
         height: 60px;
         display: flex;
         align-items: center;
@@ -39,6 +41,7 @@
     }
 
     .ed-container {
+        width: 100%;
         height: 100%;
         overflow: hidden;
         display: flex;

@@ -1,8 +1,18 @@
 <!--
  * @Author: Yeming-lv 1602552896@qq.com
+ * @Date: 2026-03-11 14:36:43
+ * @LastEditors: Yeming-lv 1602552896@qq.com
+ * @LastEditTime: 2026-05-03 14:58:00
+ * @FilePath: \webapp\src\layout\sideBar.vue
+ * @Description: 
+ * 
+ * Copyright (c) 2026 by ${git_name_email}, All Rights Reserved. 
+-->
+<!--
+ * @Author: Yeming-lv 1602552896@qq.com
  * @Date: 2025-12-11 11:09:12
  * @LastEditors: Yeming-lv 1602552896@qq.com
- * @LastEditTime: 2026-04-30 17:13:01
+ * @LastEditTime: 2026-05-03 13:11:25
  * @FilePath: \webapp\src\layout\sideBar.vue
  * @Description: 侧边文件夹导航栏，包含了个人用户管理、新建文件、文件夹导航
  * 
@@ -22,7 +32,7 @@
                 </el-icon>
                 <template #title>最新</template>
             </el-menu-item>
-            <el-sub-menu index="myFolder">
+            <el-sub-menu index="myFolder" @click="handleMenuSelection('myFolder')">
                 <template #title>
                     <el-icon>
                         <Folder />
@@ -53,7 +63,7 @@
                     </template>
                 </el-tree>
             </el-sub-menu>
-            <el-menu-item index="myShare"><el-icon>
+            <el-menu-item index="share"><el-icon>
                     <Share />
                 </el-icon>
                 <template #title>与我分享</template>
@@ -61,7 +71,7 @@
             <el-menu-item index="important"><el-icon>
                     <Star />
                 </el-icon><template #title>重要</template></el-menu-item>
-            <el-menu-item index="crycle"><el-icon>
+            <el-menu-item index="recycle"><el-icon>
                     <Delete />
                 </el-icon><template #title>回收站</template></el-menu-item>
             <!-- <el-menu-item index="group"><el-icon>
@@ -78,6 +88,8 @@
                 </el-icon>
             </el-button>
         </div> -->
+        <move-file v-model:display="moveDialogDisplay" :folders="myFolders" :file-name="currentFolder.name"
+            :file-type="'folder'"></move-file>
         <el-popover popper-class="side-bar-folder-more" :visible="hideMorePopover.more" :show-arrow="false"
             placement="right-start" :virtual-ref="moreRefs[handleFolder?.id]" virtual-triggering>
             <ul class="folder-more-list" v-click-outside="handleHideMorePop">
@@ -97,6 +109,8 @@
                 </el-popover>
                 <li v-if="handleFolder.id !== 0" @click="renameFolder">重命名</li>
                 <li v-if="handleFolder.id !== 0" @click="deleteFolder">删除</li>
+                <li v-if="handleFolder.id !== 0" @click="moveFolder">移动到</li>
+                <li v-if="handleFolder.id !== 0">加星</li>
             </ul>
         </el-popover>
     </el-menu>
@@ -110,6 +124,7 @@ import { useFolderStore } from '../store/folder';
 import { useUserStore } from '../store/user';
 import { useCurrEditStore } from '../store/currentEdit';
 import { updateNote } from '@/api/apis/note';
+import moveFile from './components/moveFile.vue';
 
 // ==================================data===================================
 const router = useRouter();
@@ -154,6 +169,9 @@ const userStore = useUserStore();
 
 const currEditStore = useCurrEditStore();
 
+// 控制moveFile对话框显示
+const moveDialogDisplay = ref(false);
+
 // ==================================钩子函数========================================
 onMounted(() => {
     if (Object.keys(currentFolder.value).length != 0) {
@@ -178,16 +196,41 @@ watch(currentFolder, (newValue) => {
 
 // =================================== methods ======================================
 // TODO 选择导航栏 文件夹
-const handleMenuSelection = (key, keyPath) => {
+const handleMenuSelection = async (key, keyPath) => {
     switch (key) {
         case 'userCenter':
             router.push({ name: 'User' });
             break;
         case 'newFile':
-            
+            router.push({
+                name: 'Note',
+                params: { type: 'new' },
+            });
+            break;
+        case 'important':
+            router.push({
+                name: 'Note',
+                params: { type: 'star' }
+            })
+            break;
+        case 'recycle':
+            router.push({
+                name: 'Note',
+                params: { type: 'recycle' }
+            })
+            break;
+        case 'share':
+            router.push({
+                name: 'Note',
+                params: { type: 'share' }
+            })
             break;
         default:
-            router.push({ name: 'Note' });
+            router.push({
+                name: 'Note',
+                params: { type: 'folder' }
+            });
+            sideBarRef.value.updateActiveIndex('myFolder');
             break;
     }
     folderStore.setCurrentFolder({
@@ -222,6 +265,10 @@ const handleFolderClick = (data, node, tree, event) => {
     // }
     // folderStore.folderRoutes = parentDatas;
     folderStore.setCurrentFolder(data);
+    router.push({
+        name: 'Note',
+        params: { type: 'folder' }
+    });
     // console.log(tree);
     // console.log(node);
 
@@ -366,6 +413,13 @@ const handleCreate = async (type) => {
                 folderStore.isRefreshFolder = true;
             }
     }
+}
+
+// 移动文件夹
+const moveFolder = () => {
+    handleHideMorePop();
+    moveDialogDisplay.value = true;
+    console.log(moveDialogDisplay.value)
 }
 
 </script>

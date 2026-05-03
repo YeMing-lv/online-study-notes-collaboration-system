@@ -4,6 +4,7 @@ import com.osnc.main.common.PageParam;
 import com.osnc.main.common.Result;
 import com.osnc.main.pojo.dto.Note;
 import com.osnc.main.pojo.dto.NoteVersion;
+import com.osnc.main.pojo.dto.Star;
 import com.osnc.main.pojo.vo.NoteQuery;
 import com.osnc.main.service.impl.NoteServiceImpl;
 import com.osnc.main.service.impl.NoteVersionServiceImpl;
@@ -55,7 +56,7 @@ public class NoteController {
      * @param noteQuery
      * @return
      */
-    @GetMapping("/list")
+    @PostMapping("/list")
     public Result listNote(@RequestBody NoteQuery noteQuery) {
         if (noteQuery.getType().equals("")) return Result.failure("Failed listType!");
 
@@ -98,6 +99,14 @@ public class NoteController {
         return Result.failure();
     }
 
-
+    @PostMapping("/star")
+    public Result starNote(@RequestParam Long userId, @RequestParam Long noteId) {
+        Star star = new Star(2, userId, noteId);
+        boolean result = starService.saveOrUpdate(star);
+        if (result) {
+            return Result.success(result);
+        }
+        return Result.failure();
+    }
 
 }

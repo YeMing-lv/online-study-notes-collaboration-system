@@ -2,7 +2,7 @@
  * @Author: Yeming-lv 1602552896@qq.com
  * @Date: 2025-12-10 17:20:46
  * @LastEditors: Yeming-lv 1602552896@qq.com
- * @LastEditTime: 2026-04-14 17:12:08
+ * @LastEditTime: 2026-05-02 15:52:42
  * @FilePath: \webapp\src\router\router.js
  * @Description: 
  * 
@@ -37,7 +37,7 @@ const routes = [
                 meta: { title: '用户中心' }
             },
             {
-                path: 'note',
+                path: 'note/:type',
                 name: 'Note',
                 component: () => import('@/views/File/noteEdit/noteEdit.vue')
             }
