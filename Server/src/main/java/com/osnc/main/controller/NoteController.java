@@ -2,14 +2,10 @@ package com.osnc.main.controller;
 
 import com.osnc.main.common.PageParam;
 import com.osnc.main.common.Result;
-import com.osnc.main.pojo.dto.Note;
-import com.osnc.main.pojo.dto.NoteVersion;
-import com.osnc.main.pojo.dto.Star;
+import com.osnc.main.pojo.dto.*;
 import com.osnc.main.pojo.vo.NoteQuery;
-import com.osnc.main.service.impl.NoteServiceImpl;
-import com.osnc.main.service.impl.NoteVersionServiceImpl;
-import com.osnc.main.service.impl.ShareServiceImpl;
-import com.osnc.main.service.impl.StarServiceImpl;
+import com.osnc.main.pojo.vo.ShareVO;
+import com.osnc.main.service.impl.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -35,6 +31,9 @@ public class NoteController {
 
     @Autowired
     private StarServiceImpl starService;
+
+    @Autowired
+    private UserServiceImpl userService;
 
     /**
      * 查询笔记
@@ -66,7 +65,7 @@ public class NoteController {
             case "share":
                 return shareService.listShareNote(noteQuery.getUserId());
             case "star":
-                return starService.listStarNote(noteQuery.getUserId());
+                return noteService.listStarNote(noteQuery.getUserId());
         }
         return Result.success("");
     }
@@ -107,6 +106,17 @@ public class NoteController {
             return Result.success(result);
         }
         return Result.failure();
+    }
+
+    @PostMapping("/share")
+    public Result shareNote(@RequestBody ShareVO share) {
+        User sharedUser = userService.getByUsername(share.getShareToUserName());
+        System.out.println(sharedUser);
+        if (sharedUser != null) {
+            share.setShareToUserId(sharedUser.getId());
+            return shareService.saveShare(share);
+        }
+        return Result.failure("Failed User Id");
     }
 
 }

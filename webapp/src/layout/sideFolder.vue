@@ -2,7 +2,7 @@
  * @Author: Yeming-lv 1602552896@qq.com
  * @Date: 2026-03-11 14:36:43
  * @LastEditors: Yeming-lv 1602552896@qq.com
- * @LastEditTime: 2026-05-03 17:52:58
+ * @LastEditTime: 2026-05-28 17:18:50
  * @FilePath: \webapp\src\layout\sideFolder.vue
  * @Description: 
  * 
@@ -74,22 +74,24 @@
                 <div class="file-title">
                     <img :src="file.type === 1 ? getImgUrl('folder.png') : getImgUrl('markdown.png')" alt="">
                     <span class="title">{{ file.name || file.title || '未命名' }}</span>
-                    <!-- <el-icon style="margin-right: 10px;">
+                    <el-icon v-if="file?.isStar == 1" style="margin-right: 10px;" @click.stop="handleUnStar(file)">
                         <StarFilled />
-                    </el-icon> -->
+                    </el-icon>
                     <popover placement="right">
                         <el-icon class="more">
                             <MoreFilled />
                         </el-icon>
                         <template #content>
                             <ul>
-                                <li style="border-bottom: 1px solid #9f9f9f;">打开所在文件夹</li>
-                                <li @click="renameFile(file.title || file.name)">重命名</li>
-                                <li @click="showHistoryVersion(file.id)">历史版本</li>
-                                <li>移动到</li>
+                                <li @click="toTheFolder(file)" style="border-bottom: 1px solid #9f9f9f;"
+                                    v-if="route.params.type == 'new' || route.params.type == 'star'">打开所在文件夹</li>
+                                <!-- <li @click="renameFile(file.title || file.name)">重命名</li> -->
+                                <li @click="showHistoryVersion(file)" v-if="file?.title">历史版本</li>
+                                <li @click="toMoveFile(file)">移动到</li>
                                 <li @click="deleteFile(file)" style="border-bottom: 1px solid #9f9f9f;">删除</li>
-                                <li @click="shareNoteDisplay = true">分享</li>
-                                <li>加星</li>
+                                <li @click="shareNoteDisplay = true"
+                                    v-if="route.params.type == 'new' || route.params.type == 'folder'">分享</li>
+                                <li @click="toStarNote(file)">加星</li>
                             </ul>
                         </template>
                     </popover>
@@ -99,14 +101,18 @@
                 </div>
                 <div class="file-other">
                     <span>{{ formatTime(file.updateTime, 'YYYY-MM-DD') }}</span>
-                    <span>只读</span>
+                    <span v-if="route.params.type == 'share'">
+                        {{ file.share?.sharePermission == 1 ? '只读' : '可编辑' }}</span>
                 </div>
             </div>
         </div>
         <el-divider direction="horizontal" content-position="center">总共{{ pageParam.total }}项</el-divider>
-        <note-history v-model:display="noteVersionDisplay" :version-list="versionList"></note-history>
+        <note-history v-model:display="noteVersionDisplay" :version-list="versionList" :note="historyNote" @cover-note="handleCoverNote"></note-history>
         <share-note v-model:display="shareNoteDisplay" :noteId="currentEdit.id"
             :userId="userStore.user.id"></share-note>
+        <move-file v-model:display="moveDialogDisplay" :folders="folderStore.folders" :handle-type="'move'"
+            :file-name="moveFileData?.name || moveFileData?.title" :folder-or-note="moveFileData"
+            :file-type="moveFileType"></move-file>
     </div>
 </template>
 <script setup>
@@ -122,12 +128,15 @@ import { getImgUrl } from '@/utils/assetsImport.js';
 import popover from '@/components/popover.vue';
 import { Search, StarFilled } from '@element-plus/icons-vue';
 import { getNoteById, deleteNote, listNote, getNoteVersionList } from '@/api/apis/note';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import noteHistory from './components/noteHistory.vue';
 import shareNote from './components/shareNote.vue';
+import { starNote, updateNote } from '../api/apis/note.js';
+import moveFile from './components/moveFile.vue';
 
 //=======================================data===================================
 const route = useRoute();
+const router = useRouter();
 // 搜索栏
 const searchInput = ref();
 // 当前排序条件
@@ -190,56 +199,15 @@ const versionList = ref([]);
 
 const shareNoteDisplay = ref(false);
 
-// 分享的笔记数据
-const testNoteData = {
-    type: 2,
-    categoryId
-        :
-        null,
-    content
-        :
-        "<p>12313</p>",
-    coverUrl
-        :
-        null,
-    createTime
-        :
-        "2026-04-30T17:12:02",
-    deleteTime
-        :
-        null,
-    folderId
-        :
-        30045,
-    id
-        :
-        20017,
-    isDeleted
-        :
-        0,
-    isPublic
-        :
-        0,
-    isRecycle
-        :
-        0,
-    readCount
-        :
-        0,
-    recycleExpireTime
-        :
-        null,
-    title
-        :
-        "123",
-    updateTime
-        :
-        "2026-05-02T07:13:07",
-    userId
-        :
-        10003,
-    permission: '1'
-}
+// 加星笔记数据
+const starNoteList = ref([]);
+
+const moveDialogDisplay = ref(false)
+// 要移动的文件数据
+const moveFileData = ref({ name: '' });
+const moveFileType = ref();
+// 被查看历史版本的笔记数据
+const historyNote = ref();
 
 //========================================钩子函数========================================
 onMounted(async () => {
@@ -268,7 +236,7 @@ watch(() => route.params.type, async (newV, oldV) => {
 })
 
 //========================================methods======================================
-
+// 根据不同分类的列表获取
 const handleNoteType = async (type) => {
     switch (type) {
         case 'new':
@@ -279,9 +247,10 @@ const handleNoteType = async (type) => {
                 ...pageParam.value
             }
             const result = await listNote(newListQuery);
-            if (result.code === 200) {
+            console.log(result)
+            if (result?.code === 200) {
                 fileList.value = result.data.slice(0, 6);
-                pageParam.value.total = 6;
+                pageParam.value.total = fileList.value.length;
             }
             break;
         case 'folder':
@@ -292,25 +261,33 @@ const handleNoteType = async (type) => {
         case 'star':
             const newListQuery1 = {
                 userId: userStore.user.id,
-                type: 'new',
+                type: 'star',
                 keyword: '',
                 ...pageParam.value
             }
             const result1 = await listNote(newListQuery1);
-            if (result1.code === 200) {
-                fileList.value = result1.data.slice(0, 4);
-                pageParam.value.total = 4;
+            if (result1?.code === 200) {
+                fileList.value = result1.data.slice(0, 6);
+                pageParam.value.total = fileList.value.length;
             }
             break;
         case 'recycle':
             fileList.value = [];
             fileList.value.push(recycleFolder);
-            pageParam.value.total = 1;
+            pageParam.value.total = fileList.value.length;
             break;
         case 'share':
-            fileList.value = [];
-            fileList.value.push(testNoteData);
-            pageParam.value.total = 1;
+            const newListQuery2 = {
+                userId: userStore.user.id,
+                type: 'share',
+                keyword: '',
+                ...pageParam.value
+            }
+            const result2 = await listNote(newListQuery2);
+            if (result2?.code === 200) {
+                fileList.value = result2.data.slice(0, 4);
+                pageParam.value.total = 4;
+            }
             break;
     }
 }
@@ -364,32 +341,50 @@ const renameFile = (name) => {
 // TODO 文件列表的删除
 // 删除
 const deleteFile = async (file) => {
-    switch (file.type) {
-        case 1:
+    if (route.params.type == 'folder') {
+        switch (file.type) {
+            case 1:
 
-            break;
-        case 2:
-            ElMessageBox.confirm('确认要删除该笔记吗？', '删除笔记')
-                .then(async () => {
-                    const result = await deleteNote(file.id);
-                    if (result.code === 200) {
-                        searchFile();
-                        currentEditStore.currentEdit = {};
-                    }
-                }).catch((err) => console.error('Failed to delete Note: ' + err))
-            break;
+                break;
+            case 2:
+                ElMessageBox.confirm('确认要删除该笔记吗？', '删除笔记')
+                    .then(async () => {
+                        const result = await deleteNote(file.id);
+                        if (result.code === 200) {
+                            searchFile();
+                            currentEditStore.currentEdit = {};
+                        }
+                    }).catch((err) => console.error('Failed to delete Note: ' + err))
+                break;
+        }
+    } else {
+        ElMessageBox.confirm('确认要删除该笔记吗？', '删除笔记')
+            .then(async () => {
+                const result = await deleteNote(file.id);
+                if (result.code === 200) {
+                    searchFile();
+                    currentEditStore.currentEdit = {};
+                }
+            }).catch((err) => console.error('Failed to delete Note: ' + err))
     }
 }
 
 // TODO 文件列表的移动
 // 移动
-const moveFile = (id) => {
-    // 修改文件的parentId父类ID。改完再重新搜索下。
+const toMoveFile = (file) => {
+    moveFileData.value = file;
+    if (file?.title) {
+        moveFileType.value = 'note';
+    } else {
+        moveFileType.value = 'folder';
+    }
+    moveDialogDisplay.value = true;
 }
 
 // 处理文件的点击
 const handleFileClick = async (data) => {
-    if (route.params.type === 'new') {
+    debugger
+    if (route.params.type !== 'folder') {
         const result = await getNoteById(data.id);
         if (result?.code === 200) {
             currentEditStore.setCurrentEdit(result.data);
@@ -434,11 +429,68 @@ const backToParentFolder = async () => {
     }
 }
 
-const showHistoryVersion = async (noteId) => {
-    const result = await getNoteVersionList(noteId);
+// 查看历史版本
+const showHistoryVersion = async (note) => {
+    const result = await getNoteVersionList(note.id);
     if (result.code === 200) {
         versionList.value = result.data;
+        historyNote.value = note;
         noteVersionDisplay.value = true;
+    }
+}
+
+// 加星笔记
+const toStarNote = async (note) => {
+    if (note.isStar == 1) {
+        ElMessage.info("已加星");
+        return;
+    }
+    const newNote = {
+        ...note,
+        isStar: 1,
+    }
+    const result = await updateNote(newNote);
+    if (result.code === 200) {
+        searchFile();
+        ElMessage.success("加星笔记成功！");
+    } else {
+        ElMessage.warning("加星笔记失败！");
+    }
+}
+
+// 取消加星笔记
+const handleUnStar = async (note) => {
+    const newNote = {
+        ...note,
+        isStar: 0
+    }
+    const result = await updateNote(newNote);
+    if (result.code === 200) {
+        handleNoteType(route.params.type);
+        // ElMessage.success("取消加星笔记成功！");
+    } else {
+        ElMessage.warning("取消加星笔记失败！");
+    }
+}
+
+// 跳转笔记所在文件夹
+const toTheFolder = async (file) => {
+    router.push({
+        name: 'Note',
+        params: { type: 'folder' }
+    });
+    const result = await getFolderByID(file.folderId);
+    if (result.code == 200) {
+        folderStore.setCurrentFolder(result.data);
+    } else {
+        console.error("getFolderById Faile: " + result.message);
+    }
+}
+
+// 判断笔记覆盖
+const handleCoverNote = () => {
+    if (historyNote.value.id == currentEdit.value.id) {
+
     }
 }
 

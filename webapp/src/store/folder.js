@@ -13,6 +13,7 @@ import { defineStore } from "pinia";
 export const useFolderStore = defineStore('folderStore', {
     state: () => ({
         currentFolder: { id: 0, name: '' },
+        folders: [],
         // folderRoutes: [],
         defaultExpandedKeys: [], // 记录树形文件夹的展开状态
         isRefreshFolder: false,

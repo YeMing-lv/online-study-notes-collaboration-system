@@ -115,6 +115,7 @@ public class FileServiceImpl extends ServiceImpl<FileMapper, File> implements Fi
                 map.put("categoryId", note.getCategoryId());
                 map.put("coverUrl", note.getCoverUrl());
                 map.put("isPublic", note.getIsPublic());
+                map.put("isStar", note.getIsStar());
                 map.put("readCount", note.getReadCount());
                 map.put("createTime", note.getCreateTime());
                 map.put("updateTime", note.getUpdateTime());

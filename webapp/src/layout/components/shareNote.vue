@@ -1,6 +1,16 @@
+<!--
+ * @Author: Yeming-lv 1602552896@qq.com
+ * @Date: 2026-05-03 16:57:04
+ * @LastEditors: Yeming-lv 1602552896@qq.com
+ * @LastEditTime: 2026-05-27 10:25:00
+ * @FilePath: \webapp\src\layout\components\shareNote.vue
+ * @Description: 
+ * 
+ * Copyright (c) 2026 by ${git_name_email}, All Rights Reserved. 
+-->
 <template>
     <el-dialog title="分享笔记" v-model="display" width="500" :append-to-body="true">
-        <el-form :model="form" ref="formRef" :rules="rules" label-width="120" :inline="false" size="normal">
+        <el-form v-loading="loading" :model="form" ref="formRef" :rules="rules" label-width="120" :inline="false">
             <el-form-item label="被分享人账号：" prop="shareToUserName">
                 <el-input v-model="form.shareToUserName" placeholder="请输入被分享人账号" clearable></el-input>
             </el-form-item>
@@ -23,8 +33,9 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { getImgUrl } from '@/utils/assetsImport.js';
+import { shareNote } from '../../api/apis/note';
 
 const display = defineModel('display', {
     default: false
@@ -36,7 +47,7 @@ const form = ref({
     targetId: props.noteId,
     shareFromUserId: props.userId,
     shareToUserName: '',
-    sharePermission: 0,
+    sharePermission: 1,
     shareExpireTime: '',
 });
 const disabledDate = (time) => {
@@ -50,7 +61,29 @@ const formRef = ref({});
 
 const rules = {};
 
+const loading = ref(false);
 
+// --------------------------------------------------//
+onUnmounted(() => {
+    form.value = {
+        targetType: 2,
+        targetId: props.noteId,
+        shareFromUserId: props.userId,
+        shareToUserName: '',
+        sharePermission: 1,
+        shareExpireTime: '',
+    }
+})
+
+// --------------------methods---------------------//
+const onSubmit = () => {
+    loading.value = true;
+    const result = shareNote(form.value);
+    console.log(result);
+    setTimeout(() => {
+        loading.value = false
+    }, 1000);
+}
 
 </script>
 

@@ -15,9 +15,13 @@ public interface UserService extends IService<User> {
     // 示例：根据用户名查询用户
     User getByUsername(String username);
 
+    User getByUserId(Long id);
+
     Result register(User user);
 
     Result login(User user);
 
     Result updateUserById(User user);
+
+
 }

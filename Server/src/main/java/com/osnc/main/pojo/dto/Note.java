@@ -44,6 +44,9 @@ public class Note {
     @TableField("is_public")
     private Integer isPublic;
 
+    @TableField("is_star")
+    private Integer isStar;
+
     @TableField("read_count")
     private Integer readCount;
 

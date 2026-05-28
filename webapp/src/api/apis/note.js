@@ -16,7 +16,10 @@ export const getNoteVersionList = (id) => { return http.get(`/note/version/getNo
 export const deleteNote = (id) => { return http.delete(`/note?id=${id}`) };
 
 // 获取指定种类笔记列表
-export const listNote = (noteQuery) => { return http.post(`/note/list`, noteQuery) }
+export const listNote = (noteQuery) => { return http.post(`/note/list`, noteQuery) };
 
 // 加星笔记
-export const starNote = (userId, noteId) => { return http.post(`/note/star?userId=${userId}&noteId=${noteId}`) }
+export const starNote = (userId, noteId) => { return http.post(`/note/star?userId=${userId}&noteId=${noteId}`) };
+
+// 分享笔记
+export const shareNote = (share) => { return http.post(`/note/share`, share) };

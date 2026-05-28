@@ -80,4 +80,18 @@ public class NoteServiceImpl extends ServiceImpl<NoteMapper, Note> implements No
         }
         return Result.failure("");
     }
+
+    @Override
+    public Result listStarNote(Long userId) {
+        Page<Note> notePage = new Page<>(1, 10);
+        LambdaQueryWrapper<Note> lambdaQueryWrapper = new LambdaQueryWrapper<>();
+        lambdaQueryWrapper.eq(Note::getUserId, userId)
+                .eq(Note::getIsStar, 1)
+                .orderByDesc(Note::getUpdateTime);
+        List noteList = noteMapper.selectList(notePage, lambdaQueryWrapper);
+        if (!noteList.isEmpty()) {
+            return Result.success(noteList);
+        }
+        return null;
+    }
 }

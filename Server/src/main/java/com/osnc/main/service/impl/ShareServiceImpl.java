@@ -8,13 +8,16 @@ import com.osnc.main.mapper.NoteMapper;
 import com.osnc.main.mapper.ShareMapper;
 import com.osnc.main.pojo.dto.Note;
 import com.osnc.main.pojo.dto.Share;
+import com.osnc.main.pojo.vo.ShareNoteVO;
 import com.osnc.main.service.ShareService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 通用分享服务实现类（MyBatis-Plus版）
@@ -62,12 +65,23 @@ public class ShareServiceImpl extends ServiceImpl<ShareMapper, Share> implements
             return Result.success("");
         }
 
-        List<Note> shareList = new ArrayList<>();
+        List<ShareNoteVO> shareList = new ArrayList<>();
         for (int i = 0; i < shares.size(); i++) {
             Note note = noteMapper.selectById(shares.get(i).getTargetId());
-            if (note != null) shareList.add(note);
+            if (note != null) {
+                shareList.add(new ShareNoteVO(note, shares.get(i)));
+            }
         }
 
         return Result.success(shareList);
+    }
+
+    @Override
+    public Result saveShare(Share share) {
+        int result = shareMapper.insert(share);
+        if (result != 0) {
+            return Result.success(1);
+        }
+        return Result.failure();
     }
 }

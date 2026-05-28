@@ -2,7 +2,7 @@
  * @Author: Yeming-lv 1602552896@qq.com
  * @Date: 2025-12-11 08:43:14
  * @LastEditors: Yeming-lv 1602552896@qq.com
- * @LastEditTime: 2026-05-03 14:56:43
+ * @LastEditTime: 2026-05-28 16:10:32
  * @FilePath: \webapp\src\views\File\file.vue
  * @Description: 主要页面，包含了侧边文件夹导航栏、侧边文件夹内容导航栏、文件编辑器
  * 
@@ -18,8 +18,9 @@
 <script setup>
 import sideBar from '@/layout/sideBar.vue';
 import { listFolderByUserId } from '@/api/apis/folder';
-import { onMounted, onUnmounted, reactive } from 'vue';
+import { computed, onMounted, onUnmounted, reactive, watch } from 'vue';
 import { useUserStore } from '@/store/user';
+import { useFolderStore } from '../../store/folder';
 import { ElMessage } from 'element-plus';
 import { updateFolder, createFolder, deleteFolder } from '@/api/apis/folder';
 import { Client } from '@stomp/stompjs';
@@ -28,6 +29,9 @@ import { Client } from '@stomp/stompjs';
 //======================================data========================================
 const folders = reactive([]);
 const userStore = useUserStore();
+const folderStore = useFolderStore();
+
+const isRefreshTree = computed(() => folderStore.isRefreshTree);
 
 let stompClient = {};
 
@@ -49,6 +53,13 @@ onUnmounted(() => {
     // window.removeEventListener('resize', setScale)
 })
 
+watch(isRefreshTree, (newV, oldV) => {
+    if (isRefreshTree) {
+        getFolders();
+        folderStore.isRefreshTree = false;
+    }
+}, { deep: true })
+
 //====================================methods========================================
 // 获取用户个人文件夹
 const getFolders = async () => {
@@ -57,6 +68,7 @@ const getFolders = async () => {
         if (result.code === 200) {
             folders.length = 0;
             folders.push(...result.data);
+            folderStore.folders = result.data;
         } else {
             ElMessage.error('获取用户文件夹失败！');
         }
@@ -68,10 +80,12 @@ const getFolders = async () => {
 
 // 重命名文件
 const handleRenameFile = async (folder) => {
+
     try {
         const result = await updateFolder(folder);
         if (result.code === 200) {
             getFolders();
+            handleRefreshList(folder.id);
         }
     } catch (error) {
         console.error(error);
@@ -91,6 +105,7 @@ const handleCreateFile = async ({ type, data }) => {
                 });
                 if (result.code === 200) {
                     getFolders();
+                    handleRefreshList(data.id);
                 }
             //TODO 新建笔记
         }
@@ -105,9 +120,17 @@ const handleDeleteFile = async (id) => {
         const result = await deleteFolder(id);
         if (result.code === 200) {
             getFolders();
+            handleRefreshList(id);
         }
     } catch (error) {
         console.error(error);
+    }
+}
+
+// 判断是否刷新文件列表
+const handleRefreshList = (folderId) => {
+    if (folderStore.currentFolder.id === folderId) {
+        folderStore.isRefreshFolder = true;
     }
 }
 

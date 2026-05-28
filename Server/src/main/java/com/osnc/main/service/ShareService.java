@@ -20,4 +20,6 @@ public interface ShareService extends IService<Share> {
     List<Share> listByShareFromUserId(Long userId);
 
     Result listShareNote(Long userId);
+
+    Result saveShare(Share share);
 }

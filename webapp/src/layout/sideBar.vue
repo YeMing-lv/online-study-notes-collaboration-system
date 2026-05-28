@@ -2,7 +2,7 @@
  * @Author: Yeming-lv 1602552896@qq.com
  * @Date: 2026-03-11 14:36:43
  * @LastEditors: Yeming-lv 1602552896@qq.com
- * @LastEditTime: 2026-05-03 14:58:00
+ * @LastEditTime: 2026-05-28 15:40:00
  * @FilePath: \webapp\src\layout\sideBar.vue
  * @Description: 
  * 
@@ -88,7 +88,7 @@
                 </el-icon>
             </el-button>
         </div> -->
-        <move-file v-model:display="moveDialogDisplay" :folders="myFolders" :file-name="currentFolder.name"
+        <move-file v-model:display="moveDialogDisplay" :folders="myFolders" :handle-type="'move'" :folder-or-note="handleFolder" :file-name="handleFolder.name"
             :file-type="'folder'"></move-file>
         <el-popover popper-class="side-bar-folder-more" :visible="hideMorePopover.more" :show-arrow="false"
             placement="right-start" :virtual-ref="moreRefs[handleFolder?.id]" virtual-triggering>
@@ -419,7 +419,7 @@ const handleCreate = async (type) => {
 const moveFolder = () => {
     handleHideMorePop();
     moveDialogDisplay.value = true;
-    console.log(moveDialogDisplay.value)
+
 }
 
 </script>

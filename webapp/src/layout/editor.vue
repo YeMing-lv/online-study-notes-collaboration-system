@@ -2,7 +2,7 @@
  * @Author: Yeming-lv 1602552896@qq.com
  * @Date: 2026-03-11 14:36:43
  * @LastEditors: Yeming-lv 1602552896@qq.com
- * @LastEditTime: 2026-05-03 17:57:06
+ * @LastEditTime: 2026-05-28 15:51:22
  * @FilePath: \webapp\src\layout\editor.vue
  * @Description: 
  * 
@@ -17,7 +17,7 @@
                 <input id="th-input" class="th-input" type="text" v-model="title" autocomplete="off"
                     placeholder="请输入标题">
                 <!-- <span class="th-title">{{ title }}</span> -->
-                <!-- <el-row class="th-right-container" :gutter="20">
+                <el-row class="th-right-container" :gutter="20">
                     <el-col :span="8">
                         <el-button type="primary" size="default" @click="saveNote('active')">保存</el-button>
                     </el-col>
@@ -40,11 +40,11 @@
                             </el-col>
                         </el-row>
                     </el-col>
-                </el-row> -->
+                </el-row>
             </el-header>
             <el-divider style="margin: 0;" />
-            <!-- <Toolbar class="toolbar-header" :editor="editorRef" :default-config="toolbarConfig" />
-            <el-divider style="margin: 0;" /> -->
+            <Toolbar class="toolbar-header" :editor="editorRef" :default-config="toolbarConfig" />
+            <el-divider style="margin: 0;" />
             <Editor class="content-main" :default-config="editorConfig" v-model="valueHtml" @onCreated="handleCreated"
                 @onChange="handleChange" @onDestroyed="handleDestroyed()" />
         </div>
@@ -54,7 +54,7 @@
 <script setup>
 import '@wangeditor/editor/dist/css/style.css';
 import { Editor, Toolbar } from '@wangeditor/editor-for-vue';
-import { onBeforeUnmount, ref, reactive, shallowRef, onMounted, watch, computed } from 'vue';
+import { onBeforeUnmount, ref, reactive, shallowRef, onMounted, watch, computed, onUnmounted } from 'vue';
 
 import { extractImagePath } from '@/utils/imageUtils';
 import { useUserStore } from '@/store/user';
@@ -62,6 +62,7 @@ import { deleteImage } from '@/api/apis/image';
 import { useCurrEditStore } from '@/store/currentEdit';
 import { ElMessage, ElScrollbar } from 'element-plus';
 import { updateNote, saveNoteVersion, starNote } from '@/api/apis/note';
+import { useFolderStore } from '../store/folder';
 
 const userStore = useUserStore();
 const currentEditStore = useCurrEditStore();
@@ -74,8 +75,12 @@ const imageList1 = reactive([]); // 图片列表 所有插入的图片 包括编
 
 const refresh = ref(false); // 刷新编辑器
 
+const folderStore = useFolderStore();
+
 //============================生命周期钩子=======================
 onMounted(() => {
+    console.log(currentEdit.value);
+    debugger
     if (currentEdit.value != null && currentEdit.value.title != null) {
         title.value = JSON.parse(JSON.stringify(currentEdit.value.title));
         valueHtml.value = JSON.parse(JSON.stringify(currentEdit.value.content));
@@ -83,28 +88,28 @@ onMounted(() => {
 })
 // 退出页面 确认是否保存草稿
 // 组件销毁前，要及时销毁编辑器，重要！
-onBeforeUnmount(() => {
+onUnmounted(() => {
     initEditContent();
     const editor = editorRef.value
     if (editor == null) return
     editor.destroy()
 });
 
-//===============================侦听器=============================
-// 读取选中笔记内容
+//===============================侦听器=============================\
+watch(currentEdit, (newValue) => {
+    if (newValue && newValue.id) {
+        title.value = newValue.title || '';
+        valueHtml.value = newValue.content || '';
+    }
+}, { immediate: true, deep: true });
+// 切换笔记刷新编辑器
 watch(currentEdit, (newValue, oldV) => {
-    if (newValue.id !== oldV.id && JSON.stringify(newValue) !== {}) {
-        // saveNote();
-        refresh.value = true;
-        setTimeout(() => {
-            refresh.value = false;
-        }, 1000)
-    }
-
-    if (Object.keys(currentEdit.value).length != 0) {
-        valueHtml.value = currentEdit.value.content;
-        title.value = currentEdit.value.title;
-    }
+  if (!oldV || newValue.id !== oldV.id) {
+    refresh.value = true;
+    setTimeout(() => {
+      refresh.value = false;
+    }, 300);
+  }
 })
 
 // 监听Ctrl+S快捷键，保存笔记
@@ -133,7 +138,7 @@ const editorConfig = {
     MENU_CONF: {
         uploadImage: { // 图片上传
             fieldName: 'file',
-            // server: `http://localhost:8082/image/upload?type=editor`,
+            server: `http://localhost:8082/image/upload?type=editor`,
             headers: {
                 Authorization: userStore.token
             },
@@ -199,6 +204,7 @@ const saveNote = async (type, note) => {
         if (result.code == 200) {
             if (type == 'active') {
                 ElMessage.success("保存成功！");
+                folderStore.isRefreshFolder = true;
             }
             currentEditStore.setCurrentEdit(newNote);
         }
@@ -208,9 +214,10 @@ const saveNote = async (type, note) => {
 // 判断是否有新内容
 const ifNewInput = () => {
     if (currentEdit.value.title === title.value && currentEdit.value.content === valueHtml.value) {
+        ElMessage.info("已保存过");
         return false;
     } else {
-        if (title.value === '' || valueHtml.value === '') {
+        if (title.value === '' || valueHtml.value === '<p><br></p>' || valueHtml.value === '') {
             ElMessage.warning("标题或内容不能为空！");
             return false;
         }
@@ -253,10 +260,6 @@ function compareImageList(list1, list2) {
     ];
 
     return list;
-}
-
-const handleStar = async () => {
-
 }
 </script>
 

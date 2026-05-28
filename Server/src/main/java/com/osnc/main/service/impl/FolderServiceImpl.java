@@ -34,7 +34,6 @@ public class FolderServiceImpl extends ServiceImpl<FolderMapper, Folder> impleme
                 .orderByDesc(Folder::getId)
                 .list();
 
-
         // 查询根目录文件夹，再递归组装子文件夹（示例逻辑）
         List<Folder> rootFolders = allFolder.stream()
                 .filter(folder -> folder.getParentId() == 0)
