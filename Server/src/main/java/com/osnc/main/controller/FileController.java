@@ -33,4 +33,10 @@ public class FileController {
         return Result.success(resultList);
     }
 
+    @PostMapping("/recycleList")
+    public Result getRecycleList(@RequestBody FolderNoteQuery query) {
+        Page<Map<String, Object>> resultList = fileService.getRecycleList(query);
+        return Result.success(resultList);
+    }
+
 }

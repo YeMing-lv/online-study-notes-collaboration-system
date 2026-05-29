@@ -2,7 +2,7 @@
  * @Author: Yeming-lv 1602552896@qq.com
  * @Date: 2026-05-03 16:57:04
  * @LastEditors: Yeming-lv 1602552896@qq.com
- * @LastEditTime: 2026-05-27 10:25:00
+ * @LastEditTime: 2026-05-29 09:39:53
  * @FilePath: \webapp\src\layout\components\shareNote.vue
  * @Description: 
  * 
@@ -81,7 +81,8 @@ const onSubmit = () => {
     const result = shareNote(form.value);
     console.log(result);
     setTimeout(() => {
-        loading.value = false
+        loading.value = false;
+        display.value = false;
     }, 1000);
 }
 

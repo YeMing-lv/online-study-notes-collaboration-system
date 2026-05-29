@@ -2,7 +2,7 @@
  * @Author: Yeming-lv 1602552896@qq.com
  * @Date: 2026-03-11 14:36:43
  * @LastEditors: Yeming-lv 1602552896@qq.com
- * @LastEditTime: 2026-05-28 17:18:50
+ * @LastEditTime: 2026-05-29 10:50:35
  * @FilePath: \webapp\src\layout\sideFolder.vue
  * @Description: 
  * 
@@ -58,7 +58,8 @@
         </el-breadcrumb> -->
         <el-row justify="center" :gutter="20">
             <el-col :span="2">
-                <el-icon style="padding-top: 5px;cursor: pointer;" @click="backToParentFolder()">
+                <el-icon v-if="route.params.type == 'folder' && fileList.length != 0"
+                    style="padding-top: 5px;cursor: pointer;" @click="backToParentFolder()">
                     <ArrowLeftBold />
                 </el-icon>
             </el-col>
@@ -74,11 +75,12 @@
                 <div class="file-title">
                     <img :src="file.type === 1 ? getImgUrl('folder.png') : getImgUrl('markdown.png')" alt="">
                     <span class="title">{{ file.name || file.title || '未命名' }}</span>
-                    <el-icon v-if="file?.isStar == 1" style="margin-right: 10px;" @click.stop="handleUnStar(file)">
+                    <el-icon v-if="file?.isStar == 1 && route.params.type != 'share' && route.params.type != 'recycle'"
+                        style="margin-right: 10px;" @click.stop="handleUnStar(file)">
                         <StarFilled />
                     </el-icon>
                     <popover placement="right">
-                        <el-icon class="more">
+                        <el-icon class="more" v-if="route.params.type !== 'recycle'">
                             <MoreFilled />
                         </el-icon>
                         <template #content>
@@ -95,6 +97,12 @@
                             </ul>
                         </template>
                     </popover>
+                    <el-icon class="more" v-if="route.params.type == 'recycle'" @click="">
+                        <Refresh />
+                    </el-icon>
+                    <el-icon class="more" v-if="route.params.type == 'recycle'">
+                        <Delete />
+                    </el-icon>
                 </div>
                 <div class="file-content" v-if="file.content">
                     {{ file.content.replace(/<[^>]+>/g, '') }}
@@ -107,12 +115,15 @@
             </div>
         </div>
         <el-divider direction="horizontal" content-position="center">总共{{ pageParam.total }}项</el-divider>
-        <note-history v-model:display="noteVersionDisplay" :version-list="versionList" :note="historyNote" @cover-note="handleCoverNote"></note-history>
+        <note-history v-model:display="noteVersionDisplay" v-model:version-list="versionList" :note="historyNote"
+            @cover-note="handleCoverNote" @edit-version="handleEditVersion(currentNote)"></note-history>
         <share-note v-model:display="shareNoteDisplay" :noteId="currentEdit.id"
             :userId="userStore.user.id"></share-note>
         <move-file v-model:display="moveDialogDisplay" :folders="folderStore.folders" :handle-type="'move'"
             :file-name="moveFileData?.name || moveFileData?.title" :folder-or-note="moveFileData"
             :file-type="moveFileType"></move-file>
+        <ShowRecycleOfFileList v-model:display="recycleFolderListDisplay" :folder="selectRecycleFolderData">
+        </ShowRecycleOfFileList>
     </div>
 </template>
 <script setup>
@@ -126,13 +137,16 @@ import { getFolderByID } from '@/api/apis/folder.js';
 import { formatTime } from '@/utils/timeHandle.js';
 import { getImgUrl } from '@/utils/assetsImport.js';
 import popover from '@/components/popover.vue';
-import { Search, StarFilled } from '@element-plus/icons-vue';
+import { Refresh, Search, StarFilled } from '@element-plus/icons-vue';
 import { getNoteById, deleteNote, listNote, getNoteVersionList } from '@/api/apis/note';
 import { useRoute, useRouter } from 'vue-router';
 import noteHistory from './components/noteHistory.vue';
 import shareNote from './components/shareNote.vue';
 import { starNote, updateNote } from '../api/apis/note.js';
 import moveFile from './components/moveFile.vue';
+import { listRecycleFileByUserId } from '../api/apis/file.js';
+import { deleteFolder } from '../api/apis/folder.js';
+import ShowRecycleOfFileList from './components/showRecycleOfFileList.vue';
 
 //=======================================data===================================
 const route = useRoute();
@@ -178,22 +192,6 @@ const pageParam = ref({
 // 文件列表
 const fileList = ref([]);
 
-// 回收站的数据
-const recycleFolder = {
-    createTime: "2025-12-30T15:53:22",
-    deleteTime: null,
-    id: 30045,
-    isDeleted: 0,
-    isRecycle: 0,
-    name: "学习资料11",
-    parentId: 0,
-    type: 1,
-    recycleExpireTime: null,
-    sort: 0,
-    updateTime: "2026-05-03T13:53:28",
-    userId: 10003,
-}
-
 const noteVersionDisplay = ref(false);
 const versionList = ref([]);
 
@@ -208,6 +206,10 @@ const moveFileData = ref({ name: '' });
 const moveFileType = ref();
 // 被查看历史版本的笔记数据
 const historyNote = ref();
+
+const recycleFolderListDisplay = ref(false);
+
+const selectRecycleFolderData = ref({ id: 10 });
 
 //========================================钩子函数========================================
 onMounted(async () => {
@@ -225,7 +227,7 @@ watch(currentFolder, (newV, oldV) => {
 
 watch(isRefreshFolder, (newV) => {
     if (isRefreshFolder) {
-        searchFile();
+        handleNoteType(route.params.type);
         folderStore.isRefreshFolder = false;
     }
 })
@@ -247,7 +249,7 @@ const handleNoteType = async (type) => {
                 ...pageParam.value
             }
             const result = await listNote(newListQuery);
-            console.log(result)
+            // console.log(result)
             if (result?.code === 200) {
                 fileList.value = result.data.slice(0, 6);
                 pageParam.value.total = fileList.value.length;
@@ -271,11 +273,26 @@ const handleNoteType = async (type) => {
                 pageParam.value.total = fileList.value.length;
             }
             break;
-        case 'recycle':
-            fileList.value = [];
-            fileList.value.push(recycleFolder);
-            pageParam.value.total = fileList.value.length;
+        case 'recycle': {
+            const query = {
+                userId: userStore.user.id,
+                folderId: 0,
+                ...pageParam.value,
+                size: 15,
+            };
+            // 添加关键词搜索
+            if (searchInput.value != null) {
+                query.keyword = searchInput.value;
+            }
+            const result = await listRecycleFileByUserId(query);
+            if (result.code === 200) {
+                const { records, ...page } = result.data;
+                // console.log(page);
+                fileList.value = records;
+                pageParam.value = page;
+            }
             break;
+        }
         case 'share':
             const newListQuery2 = {
                 userId: userStore.user.id,
@@ -344,7 +361,14 @@ const deleteFile = async (file) => {
     if (route.params.type == 'folder') {
         switch (file.type) {
             case 1:
-
+                ElMessageBox.confirm('确认要删除该文件夹吗？', '删除文件夹')
+                    .then(async () => {
+                        const result = await deleteFolder(file.id);
+                        if (result.code === 200) {
+                            searchFile();
+                            currentEditStore.currentEdit = {};
+                        }
+                    }).catch((err) => console.error('Failed to delete Note: ' + err))
                 break;
             case 2:
                 ElMessageBox.confirm('确认要删除该笔记吗？', '删除笔记')
@@ -383,8 +407,17 @@ const toMoveFile = (file) => {
 
 // 处理文件的点击
 const handleFileClick = async (data) => {
-    debugger
-    if (route.params.type !== 'folder') {
+    if (data.id === currentEdit.value.id || !data.id) {
+        return;
+    }
+    // debugger
+    console.log(data);
+    if (route.params.type == 'share') {
+        currentEditStore.setCurrentEdit(data);
+    } else if (route.params.type == 'recycle' && data?.type == 1) {
+        recycleFolderListDisplay.value = true;
+        selectRecycleFolderData.value = data;
+    } else if (route.params.type !== 'folder' && route.params.type !== 'recycle') {
         const result = await getNoteById(data.id);
         if (result?.code === 200) {
             currentEditStore.setCurrentEdit(result.data);
@@ -392,23 +425,24 @@ const handleFileClick = async (data) => {
             console.error("GetNoteByID Failed: " + result.message);
             ElMessage.warning("查询笔记失败！");
         }
-    }
-    if (!data.type || !data.id) return;
-    switch (data.type) {
-        // 文件夹
-        case 1:
-            folderStore.setCurrentFolder(data);
-            break;
-        // 笔记
-        case 2:
-            const result = await getNoteById(data.id);
-            if (result?.code === 200) {
-                currentEditStore.setCurrentEdit(result.data);
-            } else {
-                console.error("GetNoteByID Failed: " + result.message);
-                ElMessage.warning("查询笔记失败！");
-            }
-            break;
+    } else {
+        if (!data.type) return;
+        switch (data.type) {
+            // 文件夹
+            case 1:
+                folderStore.setCurrentFolder(data);
+                break;
+            // 笔记
+            case 2:
+                const result = await getNoteById(data.id);
+                if (result?.code === 200) {
+                    currentEditStore.setCurrentEdit(result.data);
+                } else {
+                    console.error("GetNoteByID Failed: " + result.message);
+                    ElMessage.warning("查询笔记失败！");
+                }
+                break;
+        }
     }
 }
 
@@ -488,9 +522,21 @@ const toTheFolder = async (file) => {
 }
 
 // 判断笔记覆盖
-const handleCoverNote = () => {
+const handleCoverNote = async () => {
+    debugger
     if (historyNote.value.id == currentEdit.value.id) {
+        const result = await getNoteById(data.id);
+        if (result?.code === 200) {
+            currentEditStore.setCurrentEdit(result.data);
+        }
+    }
+}
 
+// 版本编辑成功，刷新表格
+const handleEditVersion = async (currentNote) => {
+    const result = await getNoteVersionList(currentNote.id);
+    if (result.code === 200) {
+        versionList.value = result.data;
     }
 }
 

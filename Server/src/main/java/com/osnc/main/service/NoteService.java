@@ -26,4 +26,6 @@ public interface NoteService extends IService<Note> {
     Result listNewNote(Long userId);
 
     Result listStarNote(Long userId);
+
+    Result recycleNote(Long id);
 }

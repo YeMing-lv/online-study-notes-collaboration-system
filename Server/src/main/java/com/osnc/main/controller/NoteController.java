@@ -85,17 +85,12 @@ public class NoteController {
      */
     @PostMapping("/version/saveNoteVersion")
     public Result saveNoteVersion(@RequestBody NoteVersion noteVersion) {
-        log.info(String.valueOf(noteVersion));
         return noteVersionService.saveNoteVersion(noteVersion);
     }
 
     @DeleteMapping
     public Result deleteNote(@RequestParam Long id) {
-        boolean result = noteService.removeById(id);
-        if (result) {
-            return Result.success("");
-        }
-        return Result.failure();
+        return noteService.recycleNote(id);
     }
 
     @PostMapping("/star")

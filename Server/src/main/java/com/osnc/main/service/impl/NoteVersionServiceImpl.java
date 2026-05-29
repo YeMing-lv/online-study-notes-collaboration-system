@@ -36,8 +36,8 @@ public class NoteVersionServiceImpl extends ServiceImpl<NoteVersionMapper, NoteV
         if ( note == null ) {
             return Result.failure("错误的笔记ID");
         }
-        int result = noteVersionMapper.insert(noteVersion);
-        if (result <= 0) {
+        boolean result = noteVersionMapper.insertOrUpdate(noteVersion);
+        if (!result) {
             return Result.failure(result);
         }
         return Result.success(result);

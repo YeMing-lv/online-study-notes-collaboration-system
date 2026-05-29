@@ -20,4 +20,6 @@ public interface FileService extends IService<File> {
      * @return 合并后的数组，原生字段+追加type，已按条件排序完成
      */
     Page<Map<String, Object>> getFolderAndNoteList(FolderNoteQuery query);
+
+    Page<Map<String, Object>> getRecycleList(FolderNoteQuery query);
 }

@@ -2,7 +2,7 @@
  * @Author: Yeming-lv 1602552896@qq.com
  * @Date: 2026-05-03 15:36:08
  * @LastEditors: Yeming-lv 1602552896@qq.com
- * @LastEditTime: 2026-05-28 17:05:56
+ * @LastEditTime: 2026-05-28 21:31:38
  * @FilePath: \webapp\src\layout\components\noteHistory.vue
  * @Description: 
  * 
@@ -76,8 +76,9 @@ import { saveNoteVersion, updateNote } from '../../api/apis/note.js';
 const display = defineModel('display', {
     default: false
 })
-const props = defineProps(['versionList', 'note'])
-const emits = defineEmits(['cover-note'])
+const model = defineModel("versionList");
+const props = defineProps(['note'])
+const emits = defineEmits(['cover-note', 'edit-version'])
 
 const editDisplay = ref(false)
 
@@ -99,6 +100,16 @@ const toSaveVersion = async (version) => {
     display.value = false;
     form.value = JSON.parse(JSON.stringify(version));
     moveDialogDisplay.value = true;
+}
+
+// 保存版本编辑
+const onSubmit = async () => {
+    const result = await saveNoteVersion(form.value);
+    if (result?.code === 200) {
+        ElMessage.success("编辑成功！");
+        emits('edit-version', props.note);
+        cancelEdit();
+    }
 }
 
 // 取消版本编辑

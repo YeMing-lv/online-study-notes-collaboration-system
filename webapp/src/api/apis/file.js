@@ -12,3 +12,6 @@ import { http } from "../http";
 
 // 获取文件夹下的文件列表
 export const listFileByFolderId = (queryByFileList) => http.post('file/folder/fileList', queryByFileList);
+
+// 获取用户回收站的文件列表
+export const listRecycleFileByUserId = (query) => http.post('file/recycleList', query);

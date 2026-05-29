@@ -10,6 +10,8 @@ import com.osnc.main.service.NoteService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -93,5 +95,22 @@ public class NoteServiceImpl extends ServiceImpl<NoteMapper, Note> implements No
             return Result.success(noteList);
         }
         return null;
+    }
+
+    @Override
+    public Result recycleNote(Long id) {
+        Note note = noteMapper.selectById(id);
+        if (note == null) {
+            return Result.failure("笔记不存在");
+        }
+
+        // 2. 设置回收站状态（LocalDateTime 格式）
+        note.setIsRecycle(1);           // 标记进入回收站
+        note.setDeleteTime(LocalDateTime.now()); // 当前时间
+        note.setRecycleExpireTime(LocalDateTime.now().plusDays(30)); // 30天后过期
+
+        // 3. 执行更新（必须加！）
+        noteMapper.updateById(note);
+        return Result.success(1);
     }
 }
