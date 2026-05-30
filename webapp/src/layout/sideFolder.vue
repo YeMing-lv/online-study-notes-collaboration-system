@@ -2,19 +2,9 @@
  * @Author: Yeming-lv 1602552896@qq.com
  * @Date: 2026-03-11 14:36:43
  * @LastEditors: Yeming-lv 1602552896@qq.com
- * @LastEditTime: 2026-05-29 10:50:35
+ * @LastEditTime: 2026-05-29 16:00:44
  * @FilePath: \webapp\src\layout\sideFolder.vue
  * @Description: 
- * 
- * Copyright (c) 2026 by ${git_name_email}, All Rights Reserved. 
--->
-<!--
- * @Author: Yeming-lv 1602552896@qq.com
- * @Date: 2025-12-11 11:17:14
- * @LastEditors: Yeming-lv 1602552896@qq.com
- * @LastEditTime: 2026-05-03 15:32:10
- * @FilePath: \webapp\src\layout\sideFolder.vue
- * @Description: 侧边的文件夹导航栏，能进行条件搜索、文件夹导航、显示文件夹内的文件
  * 
  * Copyright (c) 2026 by ${git_name_email}, All Rights Reserved. 
 -->
@@ -71,7 +61,8 @@
             <div class="default-img" v-if="fileList.length === 0">
                 <img src="../assets/file-background.png">
             </div>
-            <div class="file" v-else v-for="file in fileList" :key="file.id" @click="handleFileClick(file)">
+            <div class="file" :style="getFileStyle(file)" v-else v-for="file in fileList" :key="file.id"
+                @click="handleFileClick(file)">
                 <div class="file-title">
                     <img :src="file.type === 1 ? getImgUrl('folder.png') : getImgUrl('markdown.png')" alt="">
                     <span class="title">{{ file.name || file.title || '未命名' }}</span>
@@ -97,10 +88,10 @@
                             </ul>
                         </template>
                     </popover>
-                    <el-icon class="more" v-if="route.params.type == 'recycle'" @click="">
+                    <el-icon class="more" v-if="route.params.type == 'recycle'" @click.stop="recoverFile(file)">
                         <Refresh />
                     </el-icon>
-                    <el-icon class="more" v-if="route.params.type == 'recycle'">
+                    <el-icon class="more" v-if="route.params.type == 'recycle'" @click.stop="deleteComplete(file)">
                         <Delete />
                     </el-icon>
                 </div>
@@ -145,7 +136,7 @@ import shareNote from './components/shareNote.vue';
 import { starNote, updateNote } from '../api/apis/note.js';
 import moveFile from './components/moveFile.vue';
 import { listRecycleFileByUserId } from '../api/apis/file.js';
-import { deleteFolder } from '../api/apis/folder.js';
+import { deleteFolder, updateFolder } from '../api/apis/folder.js';
 import ShowRecycleOfFileList from './components/showRecycleOfFileList.vue';
 
 //=======================================data===================================
@@ -287,7 +278,6 @@ const handleNoteType = async (type) => {
             const result = await listRecycleFileByUserId(query);
             if (result.code === 200) {
                 const { records, ...page } = result.data;
-                // console.log(page);
                 fileList.value = records;
                 pageParam.value = page;
             }
@@ -411,7 +401,6 @@ const handleFileClick = async (data) => {
         return;
     }
     // debugger
-    console.log(data);
     if (route.params.type == 'share') {
         currentEditStore.setCurrentEdit(data);
     } else if (route.params.type == 'recycle' && data?.type == 1) {
@@ -540,6 +529,87 @@ const handleEditVersion = async (currentNote) => {
     }
 }
 
+// 恢复回收站文件
+const recoverFile = async (file) => {
+    const newFile = {
+        ...file,
+        isRecycle: 0
+    };
+    if (file.type == 0) {
+        const result = await updateNote(newFile);
+        if (result?.code === 200) {
+            ElMessage.success("恢复笔记成功！");
+            handleNoteType('recycle');
+        }
+    } else if (file.type == 1) {
+        const result = await updateFolder(newFile);
+        if (result?.code === 200) {
+            ElMessage.success("恢复文件夹成功！");
+            handleNoteType('recycle');
+        }
+    }
+}
+
+// 彻底删除文件
+const deleteComplete = async (file) => {
+    const newFile = {
+        ...file,
+        isDeleted: 1,
+    }
+    ElMessageBox.confirm('确认要彻底删除该文件吗？', '彻底删除文件')
+        .then(async () => {
+            switch (file.type) {
+                case 0: {
+                    const result = await updateNote(newFile);
+                    if (result.code === 200) {
+                        ElMessage.success("已彻底删除笔记！");
+                        handleNoteType('recycle');
+                    }
+                    break;
+                }
+                case 1: {
+                    const result = await updateFolder(newFile);
+                    if (result.code === 200) {
+                        ElMessage.success("已彻底删除文件夹！");
+                        handleNoteType('recycle');
+                    }
+                    break;
+                }
+            }
+        }).catch((err) => console.error('Failed to delete Note: ' + err))
+}
+
+// 工具：去掉 HTML 标签，获取纯文本
+const getPlainText = (html) => {
+    if (!html) return ''
+    return html.replace(/<[^>]+>/g, '').trim()
+}
+
+// 工具：计算文本大概多少行（根据容器宽度 220px 估算）
+const getLineCount = (text) => {
+    if (!text) return 0
+    const len = text.length
+    // 侧边栏宽度约 220px，中文字符每行大约 32 个字
+    return Math.ceil(len / 32)
+}
+
+// 动态控制文件高度（按笔记内容行数）
+const getFileStyle = (file) => {
+    // 文件夹：不设置高度
+    if (file?.type === 1) return {}
+
+    // 笔记：根据内容行数动态设置高度
+    const text = getPlainText(file.content)
+    const line = getLineCount(text)
+
+    if (line <= 1) {
+        return { height: '70px' }    // 1行：很矮
+    } else if (line <= 2) {
+        return { height: '90px' }   // 2行：中等
+    } else {
+        return { height: '110px' }  // 3行以上：最高
+    }
+}
 
 </script>
 

@@ -46,8 +46,9 @@
             <el-divider style="margin: 0;" />
             <Toolbar v-if="handleIfEdit()" class="toolbar-header" :editor="editorRef" :default-config="toolbarConfig" />
             <el-divider style="margin: 0;" />
-            <Editor class="content-main" :default-config="editorConfig" v-model="valueHtml" @onCreated="handleCreated"
-                @onChange="handleChange" @onDestroyed="handleDestroyed()" />
+            <Editor v-if="!refresh && !Object.keys(currentEdit).length == 0" class="content-main"
+                :default-config="editorConfig" v-model="valueHtml" @onCreated="handleCreated" @onChange="handleChange"
+                @onDestroyed="handleDestroyed()" />
         </div>
     </el-container>
 </template>
@@ -99,6 +100,11 @@ onUnmounted(() => {
 //===============================侦听器=============================\
 // 切换笔记刷新编辑器
 watch(currentEdit, async (newValue, oldV) => {
+    if (editorRef.value) {
+        editorRef.value.destroy()
+        editorRef.value = null
+    }
+
     // 1. 切换前：先等 旧笔记 保存完成！【关键修复】
     if (oldV && oldV.id) {
         if (oldV?.share?.sharePermission != 1 && oldV?.isRecycle != 1) {
@@ -193,7 +199,7 @@ const handleChange = (editor) => {
 const handleDestroyed = (editor) => {
     saveNote('auto', currentEdit);
     deleteNotusedImage();
-    editorRef.value = editor; // 记录 editor 实例，重要！！！！
+    // editorRef.value = editor;
 };
 
 //==============================编辑器管理===========================
@@ -328,9 +334,7 @@ function compareImageList(list1, list2) {
 
 // 判断是否允许编辑
 const handleIfEdit = () => {
-    if (route.params.type == 'recycle' && currentEdit.value.isRecycle == 1) {
-        return false;
-    } else if (route.params.type == 'share' && currentEdit.value?.share?.sharePermission == 1) {
+    if (currentEdit.value?.share?.sharePermission == 1 || currentEdit.value.isRecycle == 1) {
         return false;
     }
     return true;

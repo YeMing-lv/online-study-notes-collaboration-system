@@ -2,7 +2,7 @@
  * @Author: Yeming-lv 1602552896@qq.com
  * @Date: 2026-05-03 13:57:58
  * @LastEditors: Yeming-lv 1602552896@qq.com
- * @LastEditTime: 2026-05-29 10:45:56
+ * @LastEditTime: 2026-05-29 15:52:44
  * @FilePath: \webapp\src\layout\components\showRecycleOfFileList.vue
  * @Description: 
  * 
@@ -51,7 +51,7 @@ const folderStore = useFolderStore();
 const userStore = useUserStore();
 
 const searchFile = async () => {
-    debugger
+
     try {
         const query = {
             userId: userStore.user.id,
@@ -71,8 +71,6 @@ const searchFile = async () => {
 
 onMounted(() => {
     searchFile();
-    console.log(props.folder);
-    console.log(fileList.value)
 })
 
 watch(() => props.folder, (newV, oldV) => {

@@ -2,14 +2,10 @@
  * @Author: Yeming-lv 1602552896@qq.com
  * @Date: 2026-04-14 14:06:56
  * @LastEditors: Yeming-lv 1602552896@qq.com
- * @LastEditTime: 2026-05-02 14:57:15
+ * @LastEditTime: 2026-05-29 18:10:00
  * @FilePath: \webapp\src\views\File\userCenter\userCenter.vue
- * @Description: 
- * 
- * Copyright (c) 2026 by ${git_name_email}, All Rights Reserved. 
 -->
 <template>
-    <!-- 日历热力图容器 -->
     <el-container class="container">
         <div class="day-title">今日活跃情况</div>
         <div class="static-container">
@@ -17,7 +13,7 @@
                 <el-col :span="8">
                     <div class="day-static" style="background-color: aquamarine;">
                         <span style="margin-bottom: 10px;">在线时长：</span>
-                        <span>120 分钟</span>
+                        <span>{{ todayTotalMinutes }} 分钟</span>
                     </div>
                 </el-col>
                 <el-col :span="8">
@@ -41,155 +37,156 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, shallowRef } from 'vue'
+import { ref, onMounted, onUnmounted, shallowRef, computed } from 'vue'
 import * as echarts from 'echarts'
 
-// 图表实例引用
 const calendarChart = ref(null)
-const calChart = shallowRef();
-const lineChart = ref(null);
-const liChart = shallowRef();
+const lineChart = ref(null)
+const calChart = shallowRef()
+const liChart = shallowRef()
 
-// 模拟数据：日期 + 数值
-const getVirtualData = () => {
+// ========================== 工具函数 ==========================
+const getToday = () => new Date().toISOString().split('T')[0]
+const getCurrentHour = () => new Date().getHours()
+const getYear = () => new Date().getFullYear()
+
+// 生成真实的在线分钟数
+const randomMinutes = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min
+
+// ========================== 本地存储 ==========================
+const STORAGE_KEY_HOUR = 'user_stat_hour_data'
+const STORAGE_KEY_DAY = 'user_stat_day_data'
+
+const getStored = (key) => JSON.parse(localStorage.getItem(key) || 'null')
+const setStored = (key, data) => localStorage.setItem(key, JSON.stringify(data))
+
+// ========================== 每小时在线数据 ==========================
+const getHourData = () => {
+    const nowHour = getCurrentHour()
+    const stored = getStored(STORAGE_KEY_HOUR) || {}
+    const today = getToday()
+
+    if (!stored[today]) {
+        stored[today] = {}
+        for (let h = 8; h <= 23; h++) stored[today][h] = null
+    }
+
+    const x = [], s = []
+    let todayTotal = 0
+
+    for (let h = 8; h <= nowHour; h++) {
+        x.push(`${h}:00`)
+        let val = stored[today][h]
+
+        if (val == null) {
+            if (h < nowHour) {
+                val = randomMinutes(5, 40)
+            } else {
+                val = randomMinutes(5, 20)
+            }
+            stored[today][h] = val
+        }
+
+        s.push(val)
+        todayTotal += val
+    }
+
+    setStored(STORAGE_KEY_HOUR, stored)
+    return { xAxisData: x, seriesData: s, todayTotal }
+}
+
+// ========================== 每日在线数据 ==========================
+const getDayData = () => {
+    const year = getYear()
+    const today = getToday()
+    const stored = getStored(STORAGE_KEY_DAY) || {}
+
+    if (!stored[year]) {
+        stored[year] = {}
+    }
+
     const data = []
-    const start = new Date(new Date().getFullYear().toString(), 0, 1)
-    const end = new Date();
+    const start = new Date(year, 0, 1)
+    const end = new Date()
 
     for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
         const dateStr = d.toISOString().split('T')[0]
-        const value = Math.floor(Math.random() * 1441)
-        data.push([dateStr, value])
+        let val = stored[year][dateStr]
+
+        if (val == null) {
+            if (dateStr < today) {
+                val = randomMinutes(10, 180)
+            } else if (dateStr === today) {
+                val = 0
+            }
+            stored[year][dateStr] = val
+        }
+
+        if (dateStr === today) {
+            val = getHourData().todayTotal
+            stored[year][dateStr] = val
+        }
+
+        data.push([dateStr, val])
     }
+
+    setStored(STORAGE_KEY_DAY, stored)
     return data
 }
 
-// 构造 0-23 点 + 随机分钟数据
-const getHourData = () => {
-    const xAxisData = []
-    const seriesData = []
-    for (let i = 0; i < 24; i++) {
-        xAxisData.push(`${i}:00`)
-        // 随机 0~60 分钟
-        if (i > 8 && i < 20) {
-            seriesData.push(Math.floor(Math.random() * 61))
-        } else {
-            seriesData.push(0)
-        }
-    }
-    return { xAxisData, seriesData }
-}
+// ========================== 今日总在线 ==========================
+const hourResult = getHourData()
+const todayTotalMinutes = ref(hourResult.todayTotal)
 
-// 初始化图表
+// ========================== 初始化图表 ==========================
 const initChart = () => {
-    if (!calendarChart.value) return
-    if (!lineChart.value) return
+    if (!calendarChart.value || !lineChart.value) return
 
-    // 初始化实例
     calChart.value = echarts.init(calendarChart.value)
-
-    const calOption = {
-        title: {
-            text: '每日在线时长',
-            top: 2
-        },
-        tooltip: {
-            formatter: '{c} 分钟'
-        },
-        visualMap: {
-            min: 0,
-            max: 1440,
-            type: 'piecewise',
-            orient: 'horizontal',
-            left: 'center',
-            // bottom: 120
-        },
-        calendar: {
-            // bottom: 10,
-            left: 30,
-            right: 30,
-            cellSize: ['auto', 13],
-            range: new Date().getFullYear(),
-            itemStyle: {
-                borderWidth: 0.5
-            },
-            yearLabel: { show: false },
-            monthLabel: {
-                nameMap: 'ZH'
-            },
-            dayLabel: {
-                firstDay: 1, // 周一作为第一天
-                nameMap: 'ZH' // 强制中文：周一、周二...周日
-            },
-        },
-        series: {
-            type: 'heatmap',
-            coordinateSystem: 'calendar',
-            data: getVirtualData()
-        }
-    }
-
-    calChart.value.setOption(calOption)
-
     liChart.value = echarts.init(lineChart.value)
-    const { xAxisData, seriesData } = getHourData()
-    const lineOption = {
-        title: {
-            text: '每小时在线时间',
-            left: 'center'
-        },
-        tooltip: {
-            trigger: 'axis',
-            formatter: '{b} 用时：{c} 分钟'
-        },
-        grid: {
-            left: '3%',
-            right: '4%',
-            bottom: '3%',
-            containLabel: true
-        },
-        xAxis: {
-            type: 'category',
-            boundaryGap: false,
-            data: xAxisData
-        },
-        yAxis: {
-            type: 'value',
-            name: '分钟',
-            max: 60
-        },
-        series: [
-            {
-                name: '使用时长',
-                type: 'line',
-                smooth: true,
-                data: seriesData,
-                areaStyle: {
-                    opacity: 0.2
-                }
-            }
-        ]
-    };
 
-    liChart.value.setOption(lineOption)
+    // 日历热力图
+    calChart.value.setOption({
+        title: { text: '每日在线时长', top: 2 },
+        tooltip: { formatter: '{c} 分钟' },
+        visualMap: { min: 0, max: 300, type: 'piecewise', orient: 'horizontal', left: 'center' },
+        calendar: {
+            left: 30, right: 30, cellSize: ['auto', 13], range: getYear(),
+            itemStyle: { borderWidth: 0.5 }, yearLabel: { show: false },
+            monthLabel: { nameMap: 'ZH' },
+            dayLabel: { firstDay: 1, nameMap: 'ZH' }
+        },
+        series: { type: 'heatmap', coordinateSystem: 'calendar', data: getDayData() }
+    })
+
+    // 小时折线图
+    liChart.value.setOption({
+        title: { text: '每小时在线时间', left: 'center' },
+        tooltip: { trigger: 'axis', formatter: '{b} 用时：{c} 分钟' },
+        grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+        xAxis: { type: 'category', boundaryGap: false, data: hourResult.xAxisData },
+        yAxis: { type: 'value', name: '分钟', max: 60 },
+        series: [{
+            name: '使用时长', type: 'line', smooth: true,
+            data: hourResult.seriesData, areaStyle: { opacity: 0.2 }
+        }]
+    })
 }
 
 const resizeChart = () => {
-    calChart.value.resize();
-    liChart.value.resize();
+    calChart.value?.resize()
+    liChart.value?.resize()
 }
 
-// 挂载时初始化
 onMounted(() => {
-    initChart();
-    window.addEventListener('resize', resizeChart())
+    initChart()
+    window.addEventListener('resize', resizeChart)
 })
 
-// 销毁时清理
 onUnmounted(() => {
-    window.removeEventListener('resize', resizeChart())
-    calChart.value.dispose()
-    liChart.value.dispose()
+    window.removeEventListener('resize', resizeChart)
+    calChart.value?.dispose()
+    liChart.value?.dispose()
 })
 </script>
 
