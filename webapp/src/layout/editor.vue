@@ -69,6 +69,7 @@ import { useRoute } from 'vue-router';
 const userStore = useUserStore();
 const currentEditStore = useCurrEditStore();
 const currentEdit = computed(() => currentEditStore.currentEdit);
+const isRefreshNote = computed(() => currentEditStore.isRefreshNote);
 
 const editorRef = shallowRef(); // 编辑器实例，必须用 shallowRef，重要!
 const title = ref('');
@@ -100,8 +101,9 @@ onUnmounted(() => {
 //===============================侦听器=============================\
 // 切换笔记刷新编辑器
 watch(currentEdit, async (newValue, oldV) => {
+    debugger
     if (editorRef.value) {
-        editorRef.value.destroy()
+        // editorRef.value.destroy()
         editorRef.value = null
     }
 
@@ -129,6 +131,20 @@ watch(currentEdit, async (newValue, oldV) => {
         }, 300);
     }
 }, { immediate: true, deep: true });
+
+watch(isRefreshNote, (newV, oldV) => {
+    if (isRefreshNote) {
+        refresh.value = true;
+
+        title.value = currentEdit.value.title || '';
+        valueHtml.value = currentEdit.value.content || '';
+
+        setTimeout(() => {
+            refresh.value = false;
+            currentEditStore.isRefreshNote = false;
+        }, 300);
+    }
+})
 
 // 监听Ctrl+S快捷键，保存笔记
 document.addEventListener("keydown", (event) => {
@@ -206,6 +222,7 @@ const handleDestroyed = (editor) => {
 // TODO 主动保存、自动保存、快捷键保存、切换笔记前保存
 // 保存
 const saveNote = async (type, note) => {
+    debugger
     // 必须用传入的 note，不能用当前编辑
     if (!note || !note.id) return;
 
@@ -236,9 +253,9 @@ const saveNote = async (type, note) => {
             }
 
             // 只有手动保存时才更新store，自动保存不更新
-            if (type === 'active') {
-                currentEditStore.setCurrentEdit(newNote);
-            }
+            // if (type === 'active') {
+            //     currentEditStore.setCurrentEdit(newNote);
+            // }
         }
     } catch (err) {
         console.error('保存失败', err);

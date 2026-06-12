@@ -13,6 +13,7 @@ import { defineStore } from "pinia";
 export const useCurrEditStore = defineStore('currentEdit', {
     state: () => ({
         currentEdit: {},
+        isRefreshNote: false,
     }),
     actions: {
         init() {

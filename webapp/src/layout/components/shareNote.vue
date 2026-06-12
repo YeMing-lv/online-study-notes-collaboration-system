@@ -44,7 +44,7 @@ const props = defineProps(['noteId', 'userId'])
 
 const form = ref({
     targetType: 2,
-    targetId: props.noteId,
+    targetId: 0,
     shareFromUserId: props.userId,
     shareToUserName: '',
     sharePermission: 1,
@@ -76,9 +76,11 @@ onUnmounted(() => {
 })
 
 // --------------------methods---------------------//
-const onSubmit = () => {
+const onSubmit = async () => {
     loading.value = true;
-    const result = shareNote(form.value);
+    form.value.targetId = props.noteId;
+    console.log(form.value);
+    const result = await shareNote(form.value);
     console.log(result);
     setTimeout(() => {
         loading.value = false;

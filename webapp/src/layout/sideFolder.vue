@@ -353,20 +353,24 @@ const deleteFile = async (file) => {
             case 1:
                 ElMessageBox.confirm('确认要删除该文件夹吗？', '删除文件夹')
                     .then(async () => {
-                        const result = await deleteFolder(file.id);
+                        const result = await updateFolder({ ...file, isRecycle: 1 });
                         if (result.code === 200) {
-                            searchFile();
-                            currentEditStore.currentEdit = {};
+                            handleNoteType(route.params.type);
+                            if (currentEdit.value.id == file.id) {
+                                currentEditStore.currentEdit = {};
+                            }
                         }
                     }).catch((err) => console.error('Failed to delete Note: ' + err))
                 break;
             case 2:
                 ElMessageBox.confirm('确认要删除该笔记吗？', '删除笔记')
                     .then(async () => {
-                        const result = await deleteNote(file.id);
+                        const result = await updateNote({ ...file, isRecycle: 1 });
                         if (result.code === 200) {
-                            searchFile();
-                            currentEditStore.currentEdit = {};
+                            handleNoteType(route.params.type);
+                            if (currentEdit.value.id == file.id) {
+                                currentEditStore.currentEdit = {};
+                            }
                         }
                     }).catch((err) => console.error('Failed to delete Note: ' + err))
                 break;
@@ -374,10 +378,12 @@ const deleteFile = async (file) => {
     } else {
         ElMessageBox.confirm('确认要删除该笔记吗？', '删除笔记')
             .then(async () => {
-                const result = await deleteNote(file.id);
+                const result = await updateNote({ ...file, isRecycle: 1 });
                 if (result.code === 200) {
-                    searchFile();
-                    currentEditStore.currentEdit = {};
+                    handleNoteType(route.params.type);
+                    if (currentEdit.value.id == file.id) {
+                        currentEditStore.currentEdit = {};
+                    }
                 }
             }).catch((err) => console.error('Failed to delete Note: ' + err))
     }
@@ -512,11 +518,13 @@ const toTheFolder = async (file) => {
 
 // 判断笔记覆盖
 const handleCoverNote = async () => {
-    debugger
+    // debugger
     if (historyNote.value.id == currentEdit.value.id) {
-        const result = await getNoteById(data.id);
+        const result = await getNoteById(historyNote.value.id);
         if (result?.code === 200) {
+            // console.log(result)
             currentEditStore.setCurrentEdit(result.data);
+            currentEditStore.isRefreshNote = true;
         }
     }
 }
@@ -531,11 +539,12 @@ const handleEditVersion = async (currentNote) => {
 
 // 恢复回收站文件
 const recoverFile = async (file) => {
+    debugger
     const newFile = {
         ...file,
         isRecycle: 0
     };
-    if (file.type == 0) {
+    if (file.type == 2) {
         const result = await updateNote(newFile);
         if (result?.code === 200) {
             ElMessage.success("恢复笔记成功！");
@@ -546,6 +555,7 @@ const recoverFile = async (file) => {
         if (result?.code === 200) {
             ElMessage.success("恢复文件夹成功！");
             handleNoteType('recycle');
+            folderStore.isRefreshTree = true;
         }
     }
 }
